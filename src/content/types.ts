@@ -68,3 +68,38 @@ export interface CodeQuestion {
   hints: [string, string, string, string]; // nudge -> concept -> pseudocode -> near-solution
   spec: HarnessSpec;
 }
+
+// Grading result shapes. Defined here (not in engine/grading/types.ts, which
+// re-exports these) because storage/types.ts's Attempt needs to store a
+// Scorecard, and storage/ sits below engine/ in the layer order — it can't
+// import from engine/. These three only reference other types already in
+// this file, so they have no engine-runner-specific dependency anyway.
+
+export interface Fraction {
+  correct: number;
+  total: number;
+}
+
+export interface TestFailure {
+  id: string;
+  group: TestGroup;
+  label?: string;
+  error?: string;
+  args?: Json[];
+  expected?: Json;
+  got?: Json;
+  script?: OpStep[];
+  failedStepIndex?: number;
+}
+
+export interface Scorecard {
+  questionId: QuestionId;
+  correctness: Fraction; // visible + hidden groups
+  edgeCases: Fraction; // edge group
+  overall: number; // 0-100, weighted 70/30 correctness/edgeCases
+  failures: TestFailure[];
+  // Reserved, null in V1 — populated when AI review / complexity analysis land.
+  style: null;
+  readability: null;
+  complexity: null;
+}

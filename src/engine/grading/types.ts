@@ -1,4 +1,12 @@
-import type { Json, OpStep, QuestionId, TestGroup } from '../../content/types';
+import type { Json, OpStep, TestGroup } from '../../content/types';
+
+// Fraction/TestFailure/Scorecard live in content/types.ts, not here: Attempt
+// (storage/types.ts) needs to store a Scorecard, and storage/ sits below
+// engine/ in the layer order, so it can't import from engine/. Since those
+// three types only reference other content/types.ts data (no engine-runner
+// specifics), they're defined there and re-exported here so every existing
+// import site (grade.ts, ui/) keeps working unchanged.
+export type { Fraction, TestFailure, Scorecard } from '../../content/types';
 
 export interface TestCaseReportEntry {
   id: string;
@@ -34,33 +42,4 @@ export interface HarnessReport {
   status: 'ok' | 'syntax_error' | 'runtime_error';
   message: string | null;
   results: TestCaseReportEntry[];
-}
-
-export interface Fraction {
-  correct: number;
-  total: number;
-}
-
-export interface TestFailure {
-  id: string;
-  group: TestGroup;
-  label?: string;
-  error?: string;
-  args?: Json[];
-  expected?: Json;
-  got?: Json;
-  script?: OpStep[];
-  failedStepIndex?: number;
-}
-
-export interface Scorecard {
-  questionId: QuestionId;
-  correctness: Fraction; // visible + hidden groups
-  edgeCases: Fraction; // edge group
-  overall: number; // 0-100, weighted 70/30 correctness/edgeCases
-  failures: TestFailure[];
-  // Reserved, null in V1 — populated when AI review / complexity analysis land.
-  style: null;
-  readability: null;
-  complexity: null;
 }

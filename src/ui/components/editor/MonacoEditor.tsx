@@ -5,18 +5,28 @@ interface MonacoEditorProps {
   value: string;
   onChange: (value: string) => void;
   onRun: () => void;
+  onSave?: () => void;
 }
 
-export function MonacoEditor({ value, onChange, onRun }: MonacoEditorProps) {
+export function MonacoEditor({ value, onChange, onRun, onSave }: MonacoEditorProps) {
   const onRunRef = useRef(onRun);
   useEffect(() => {
     onRunRef.current = onRun;
   }, [onRun]);
 
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
   const handleMount: OnMount = (editor, monaco) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- monaco-editor's own .d.ts isn't fully resolved by eslint's type-aware parser here; tsc typechecks this file cleanly.
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRunRef.current();
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- same as above.
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      onSaveRef.current?.();
     });
   };
 

@@ -1,12 +1,10 @@
-import { useState } from 'react';
-
 interface HintsLadderProps {
   hints: readonly [string, string, string, string];
+  revealedCount: number;
+  onReveal: () => void;
 }
 
-export function HintsLadder({ hints }: HintsLadderProps) {
-  const [revealedCount, setRevealedCount] = useState(0);
-
+export function HintsLadder({ hints, revealedCount, onReveal }: HintsLadderProps) {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold text-text">Hints</h3>
@@ -23,7 +21,7 @@ export function HintsLadder({ hints }: HintsLadderProps) {
             <button
               key={index}
               type="button"
-              onClick={() => setRevealedCount((count) => count + 1)}
+              onClick={onReveal}
               className="rounded border border-border bg-bg-raised px-3 py-2 text-left text-sm text-accent transition-colors hover:border-accent"
             >
               Show hint {index + 1} of {hints.length}
