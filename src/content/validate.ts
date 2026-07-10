@@ -1,4 +1,4 @@
-import type { CodeQuestion, ModuleKind, QuestionId, RoadmapModule, StageType } from './types';
+import type { CodeQuestion, ModuleId, ModuleKind, QuestionId, RoadmapModule, StageType } from './types';
 
 export function validateQuestion(question: CodeQuestion): string[] {
   const errors: string[] = [];
@@ -126,6 +126,91 @@ export function validateModuleRegistry(modules: RoadmapModule[], questions: Code
     }
     seenIds.add(module.id);
     errors.push(...validateModule(module, questionIds));
+  }
+
+  return errors;
+}
+
+// The fixed 18-node V1 catalog per ARCHITECTURE §4.1 — 6 Data Structures, 12
+// Algorithms. Checked by id (not just count) so a typo'd id fails loudly
+// instead of silently swapping in an unexpected node.
+const EXPECTED_MODULE_IDS: ModuleId[] = [
+  'stack',
+  'linked-list',
+  'trees',
+  'tries',
+  'heap-pq',
+  'graphs',
+  'arrays-hashing',
+  'two-pointers',
+  'binary-search',
+  'sliding-window',
+  'backtracking',
+  'intervals',
+  'greedy',
+  'advanced-graphs',
+  'dp-1d',
+  'dp-2d',
+  'bit-manipulation',
+  'math-geometry',
+];
+
+function findDagCycle(modules: RoadmapModule[]): ModuleId | null {
+  const byId = new Map(modules.map((m) => [m.id, m]));
+  const state = new Map<ModuleId, 'visiting' | 'done'>();
+
+  function visit(id: ModuleId): ModuleId | null {
+    const current = state.get(id);
+    if (current === 'done') return null;
+    if (current === 'visiting') return id;
+
+    state.set(id, 'visiting');
+    const module = byId.get(id);
+    if (module) {
+      for (const prereqId of module.prerequisites) {
+        const cyclePoint = visit(prereqId);
+        if (cyclePoint) return cyclePoint;
+      }
+    }
+    state.set(id, 'done');
+    return null;
+  }
+
+  for (const module of modules) {
+    const cyclePoint = visit(module.id);
+    if (cyclePoint) return cyclePoint;
+  }
+  return null;
+}
+
+/** DAG integrity: all 18 catalog ids present, no dangling prerequisite edges, no cycles. */
+export function validateDag(modules: RoadmapModule[]): string[] {
+  const errors: string[] = [];
+  const idSet = new Set(modules.map((m) => m.id));
+
+  for (const id of EXPECTED_MODULE_IDS) {
+    if (!idSet.has(id)) {
+      errors.push(`roadmap DAG is missing expected module '${id}'`);
+    }
+  }
+  const expectedSet = new Set(EXPECTED_MODULE_IDS);
+  for (const id of idSet) {
+    if (!expectedSet.has(id)) {
+      errors.push(`roadmap DAG has module '${id}' not in the 18-module V1 catalog`);
+    }
+  }
+
+  for (const module of modules) {
+    for (const prereqId of module.prerequisites) {
+      if (!idSet.has(prereqId)) {
+        errors.push(`${module.id}: prerequisite '${prereqId}' does not reference a known module`);
+      }
+    }
+  }
+
+  const cyclePoint = findDagCycle(modules);
+  if (cyclePoint) {
+    errors.push(`roadmap DAG has a cycle involving '${cyclePoint}'`);
   }
 
   return errors;

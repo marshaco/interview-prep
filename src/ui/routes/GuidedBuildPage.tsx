@@ -25,7 +25,7 @@ export function GuidedBuildPage() {
       <div className="mx-auto max-w-2xl px-6 py-10">
         <p className="text-text">Guided Build step not found.</p>
         <Link to="/" className="text-accent">
-          Back to list
+          ← Roadmap
         </Link>
       </div>
     );
@@ -33,7 +33,7 @@ export function GuidedBuildPage() {
 
   const isLastStep = stepIndex === questionIds.length - 1;
   const isStepComplete = player.playerResult?.scorecard?.overall === 100;
-  const nextHref = isLastStep ? '/' : `/guided-build/${stepIndex + 2}`;
+  const nextHref = isLastStep ? `/modules/${MODULE_ID}` : `/guided-build/${stepIndex + 2}`;
   const nextLabel = isLastStep ? 'Continue to Independent Build →' : 'Next step →';
 
   return (
@@ -41,8 +41,8 @@ export function GuidedBuildPage() {
       question={question}
       player={player}
       headerLeft={
-        <Link to="/" className="text-sm text-text-muted hover:text-accent">
-          ← All questions
+        <Link to={`/modules/${MODULE_ID}`} className="text-sm text-text-muted hover:text-accent">
+          ← Back to module
         </Link>
       }
       headerRight={

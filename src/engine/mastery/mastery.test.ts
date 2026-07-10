@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { masteryStars, updateMastery } from './mastery';
+import { masteryStars, moduleProgress, updateMastery } from './mastery';
+import type { Skill } from '../../content/types';
+import type { SkillMastery } from '../../storage/types';
 
 describe('updateMastery', () => {
   it('takes the first attempt as-is rather than blending with a phantom zero prior', () => {
@@ -52,5 +54,35 @@ describe('masteryStars', () => {
 
   it('does not cap stars once 2+ attempts have been recorded', () => {
     expect(masteryStars({ skillId: 's', score: 100, attempts: 2, updatedAt: '' })).toBe(5);
+  });
+});
+
+describe('moduleProgress', () => {
+  const skill = (id: string): Skill => ({ id, moduleId: 'm', title: id, kind: 'method' });
+  const mastery = (skillId: string, score: number, attempts = 2): SkillMastery => ({
+    skillId,
+    score,
+    attempts,
+    updatedAt: '',
+  });
+
+  it('is 0 for a module with no skills', () => {
+    expect(moduleProgress([], new Map())).toBe(0);
+  });
+
+  it('treats a never-attempted skill as 0 stars, not as excluded from the average', () => {
+    const skills = [skill('a'), skill('b')];
+    const masteryBySkill = new Map([['a', mastery('a', 100)]]); // 5 stars; 'b' has no record
+    // (5 + 0) / (2 skills * 5 max) = 0.5
+    expect(moduleProgress(skills, masteryBySkill)).toBe(0.5);
+  });
+
+  it('is 1 when every skill is at 5 stars', () => {
+    const skills = [skill('a'), skill('b')];
+    const masteryBySkill = new Map([
+      ['a', mastery('a', 100)],
+      ['b', mastery('b', 100)],
+    ]);
+    expect(moduleProgress(skills, masteryBySkill)).toBe(1);
   });
 });

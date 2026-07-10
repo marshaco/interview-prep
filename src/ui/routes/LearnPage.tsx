@@ -13,7 +13,7 @@ export function LearnPage() {
       <div className="mx-auto max-w-2xl px-6 py-10">
         <p className="text-text">Learn content not found.</p>
         <Link to="/" className="text-accent">
-          Back to list
+          ← Roadmap
         </Link>
       </div>
     );
@@ -21,8 +21,8 @@ export function LearnPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
-      <Link to="/" className="text-sm text-text-muted hover:text-accent">
-        ← All questions
+      <Link to={`/modules/${MODULE_ID}`} className="text-sm text-text-muted hover:text-accent">
+        ← Back to module
       </Link>
       <h1 className="mb-1 mt-4 text-xl font-semibold text-text">{module.title}: Learn</h1>
       <p className="mb-8 text-sm text-text-muted">{module.summary}</p>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateModule, validateModuleRegistry, validateQuestion, validateRegistry } from './validate';
+import { validateDag, validateModule, validateModuleRegistry, validateQuestion, validateRegistry } from './validate';
 import { modules, questions } from './registry';
 import type { CodeQuestion, RoadmapModule } from './types';
 
@@ -216,5 +216,46 @@ describe('validateModuleRegistry', () => {
 
   it('the real module registry has no validation errors', () => {
     expect(validateModuleRegistry(modules, questions)).toEqual([]);
+  });
+});
+
+function baseDagModule(overrides: Partial<RoadmapModule> = {}): RoadmapModule {
+  return {
+    id: 'm',
+    kind: 'data_structure',
+    title: 'm',
+    summary: 's',
+    prerequisites: [],
+    skills: [],
+    stages: [],
+    ...overrides,
+  };
+}
+
+describe('validateDag', () => {
+  it('flags a missing expected catalog id', () => {
+    const incomplete = modules.filter((m) => m.id !== 'math-geometry');
+    expect(validateDag(incomplete).some((e) => e.includes("missing expected module 'math-geometry'"))).toBe(true);
+  });
+
+  it('flags a module id outside the 18-module catalog', () => {
+    const extra = [...modules, baseDagModule({ id: 'not-in-catalog' })];
+    expect(validateDag(extra).some((e) => e.includes("'not-in-catalog' not in the 18-module"))).toBe(true);
+  });
+
+  it('flags a dangling prerequisite edge', () => {
+    const broken = modules.map((m) => (m.id === 'stack' ? { ...m, prerequisites: ['does-not-exist'] } : m));
+    expect(broken.find((m) => m.id === 'stack')).toBeDefined();
+    expect(validateDag(broken).some((e) => e.includes("prerequisite 'does-not-exist'"))).toBe(true);
+  });
+
+  it('flags a cycle', () => {
+    const a = baseDagModule({ id: 'a', prerequisites: ['b'] });
+    const b = baseDagModule({ id: 'b', prerequisites: ['a'] });
+    expect(validateDag([a, b]).some((e) => e.includes('has a cycle'))).toBe(true);
+  });
+
+  it('the real 18-module catalog has a clean DAG', () => {
+    expect(validateDag(modules)).toEqual([]);
   });
 });

@@ -15,7 +15,7 @@ export function QuestionPlayerPage() {
       <div className="mx-auto max-w-2xl px-6 py-10">
         <p className="text-text">Question not found.</p>
         <Link to="/" className="text-accent">
-          Back to list
+          ← Roadmap
         </Link>
       </div>
     );
@@ -26,8 +26,8 @@ export function QuestionPlayerPage() {
       question={question}
       player={player}
       headerLeft={
-        <Link to="/" className="text-sm text-text-muted hover:text-accent">
-          ← All questions
+        <Link to={`/modules/${question.moduleId}`} className="text-sm text-text-muted hover:text-accent">
+          ← Back to module
         </Link>
       }
     />

@@ -1,5 +1,7 @@
-import type { SkillId } from '../../content/types';
+import type { Skill, SkillId } from '../../content/types';
 import type { SkillMastery } from '../../storage/types';
+
+const MAX_STARS = 5;
 
 const EWMA_ATTEMPT_WEIGHT = 0.7;
 const EWMA_PRIOR_WEIGHT = 0.3;
@@ -44,4 +46,19 @@ export function masteryStars(mastery: SkillMastery): number {
     return Math.min(rawStars, LOW_EVIDENCE_STAR_CAP);
   }
   return rawStars;
+}
+
+/**
+ * Module-level roadmap progress (0-1): average star rating across the
+ * module's skills, out of the 5-star max. A skill with no mastery record
+ * yet (never attempted) counts as 0 stars, not "excluded from the average"
+ * — an unattempted skill is not evidence of mastery.
+ */
+export function moduleProgress(skills: Skill[], masteryBySkill: ReadonlyMap<SkillId, SkillMastery>): number {
+  if (skills.length === 0) return 0;
+  const totalStars = skills.reduce((sum, skill) => {
+    const mastery = masteryBySkill.get(skill.id);
+    return sum + (mastery ? masteryStars(mastery) : 0);
+  }, 0);
+  return totalStars / (skills.length * MAX_STARS);
 }

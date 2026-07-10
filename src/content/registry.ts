@@ -14,7 +14,7 @@ import { step1Append } from './modules/linked-list/questions/guidedBuild/step1Ap
 import { step2Prepend } from './modules/linked-list/questions/guidedBuild/step2Prepend';
 import { step3Delete } from './modules/linked-list/questions/guidedBuild/step3Delete';
 import { step4Search } from './modules/linked-list/questions/guidedBuild/step4Search';
-import { linkedListModule } from './modules/linked-list/module';
+import { roadmapModules } from './roadmap';
 
 export const questions: CodeQuestion[] = [
   append,
@@ -42,7 +42,7 @@ export function getQuestion(id: QuestionId): CodeQuestion | undefined {
   return questionsById.get(id);
 }
 
-export const modules: RoadmapModule[] = [linkedListModule];
+export const modules: RoadmapModule[] = roadmapModules;
 
 export const modulesById: ReadonlyMap<ModuleId, RoadmapModule> = new Map(modules.map((mod) => [mod.id, mod]));
 
