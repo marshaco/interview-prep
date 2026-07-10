@@ -1,4 +1,4 @@
-import type { CodeQuestion } from './types';
+import type { CodeQuestion, ModuleKind, QuestionId, RoadmapModule, StageType } from './types';
 
 export function validateQuestion(question: CodeQuestion): string[] {
   const errors: string[] = [];
@@ -73,6 +73,59 @@ export function validateRegistry(questions: CodeQuestion[]): string[] {
     }
     seenIds.add(question.id);
     errors.push(...validateQuestion(question));
+  }
+
+  return errors;
+}
+
+// Per ARCHITECTURE §4.3 / the ModuleKind architecture invariant: a module's
+// stages must match its kind's template exactly. Mismatches (e.g. an
+// `algorithm` module with `guided_build`) fail validation — never
+// special-cased in the engine or UI.
+const ALLOWED_STAGE_TYPES: Record<ModuleKind, StageType[]> = {
+  data_structure: ['learn', 'guided_build', 'independent_build', 'method_drills', 'interview_mode'],
+  algorithm: ['learn', 'guided_apply', 'algorithm_drills', 'interview_mode'],
+};
+
+export function validateModule(module: RoadmapModule, questionIds: ReadonlySet<QuestionId>): string[] {
+  const errors: string[] = [];
+  const prefix = module.id || '<missing module id>';
+
+  const allowedTypes: readonly StageType[] = ALLOWED_STAGE_TYPES[module.kind];
+  for (const stage of module.stages) {
+    if (!allowedTypes.includes(stage.type)) {
+      errors.push(`${prefix}: stage type '${stage.type}' is not valid for kind '${module.kind}'`);
+    }
+    for (const item of stage.items) {
+      if (item.type === 'question' && !questionIds.has(item.questionId)) {
+        errors.push(`${prefix}: stage '${stage.type}' references unknown question '${item.questionId}'`);
+      }
+    }
+  }
+
+  if (module.skills.length === 0) {
+    errors.push(`${prefix}: module has no skills`);
+  }
+  for (const skill of module.skills) {
+    if (skill.moduleId !== module.id) {
+      errors.push(`${prefix}: skill '${skill.id}' has moduleId '${skill.moduleId}', expected '${module.id}'`);
+    }
+  }
+
+  return errors;
+}
+
+export function validateModuleRegistry(modules: RoadmapModule[], questions: CodeQuestion[]): string[] {
+  const questionIds = new Set(questions.map((q) => q.id));
+  const errors: string[] = [];
+
+  const seenIds = new Set<string>();
+  for (const module of modules) {
+    if (seenIds.has(module.id)) {
+      errors.push(`duplicate module id '${module.id}'`);
+    }
+    seenIds.add(module.id);
+    errors.push(...validateModule(module, questionIds));
   }
 
   return errors;

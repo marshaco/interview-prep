@@ -103,3 +103,48 @@ export interface Scorecard {
   readability: null;
   complexity: null;
 }
+
+// --- Module / stage content model (ARCHITECTURE §4.1-§4.4) ---
+
+export type ModuleKind = 'data_structure' | 'algorithm';
+export type ModuleCategory = 'Data Structures' | 'Algorithms'; // display grouping; derived 1:1 from kind
+
+export type StageType =
+  | 'learn' // both kinds
+  | 'guided_build' // data_structure only
+  | 'independent_build' // data_structure only
+  | 'method_drills' // data_structure only
+  | 'guided_apply' // algorithm only
+  | 'algorithm_drills' // algorithm only
+  | 'interview_mode'; // both kinds
+
+export interface LessonSection {
+  id: string;
+  title: string;
+  body: string; // markdown
+}
+
+export type StageItem = { type: 'lesson'; lesson: LessonSection } | { type: 'question'; questionId: QuestionId };
+
+export interface Stage {
+  type: StageType;
+  title: string;
+  items: StageItem[];
+}
+
+export interface Skill {
+  id: SkillId;
+  moduleId: ModuleId;
+  title: string;
+  kind: 'method' | 'full_structure' | 'algorithm_application' | 'concept';
+}
+
+export interface RoadmapModule {
+  id: ModuleId;
+  kind: ModuleKind;
+  title: string;
+  summary: string;
+  prerequisites: ModuleId[];
+  stages: Stage[];
+  skills: Skill[];
+}

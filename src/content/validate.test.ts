@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { validateQuestion, validateRegistry } from './validate';
-import { questions } from './registry';
-import type { CodeQuestion } from './types';
+import { validateModule, validateModuleRegistry, validateQuestion, validateRegistry } from './validate';
+import { modules, questions } from './registry';
+import type { CodeQuestion, RoadmapModule } from './types';
 
 function baseQuestion(overrides: Partial<CodeQuestion> = {}): CodeQuestion {
   return {
@@ -130,5 +130,91 @@ describe('validateRegistry', () => {
 
   it('the real content registry has no validation errors', () => {
     expect(validateRegistry(questions)).toEqual([]);
+  });
+});
+
+function baseModule(overrides: Partial<RoadmapModule> = {}): RoadmapModule {
+  return {
+    id: 'test-module',
+    kind: 'data_structure',
+    title: 'Test Module',
+    summary: 'summary',
+    prerequisites: [],
+    skills: [{ id: 'test-module/skill', moduleId: 'test-module', title: 'skill', kind: 'method' }],
+    stages: [{ type: 'learn', title: 'Learn', items: [] }],
+    ...overrides,
+  };
+}
+
+describe('validateModule', () => {
+  it('accepts a well-formed data_structure module', () => {
+    const module = baseModule({
+      stages: [
+        { type: 'learn', title: 'Learn', items: [] },
+        { type: 'guided_build', title: 'Guided Build', items: [{ type: 'question', questionId: 'q1' }] },
+        { type: 'independent_build', title: 'Independent Build', items: [] },
+        { type: 'method_drills', title: 'Method Drills', items: [] },
+      ],
+    });
+    expect(validateModule(module, new Set(['q1']))).toEqual([]);
+  });
+
+  it('accepts a well-formed algorithm module', () => {
+    const module = baseModule({
+      kind: 'algorithm',
+      stages: [
+        { type: 'learn', title: 'Learn', items: [] },
+        { type: 'guided_apply', title: 'Guided Apply', items: [] },
+        { type: 'algorithm_drills', title: 'Algorithm Drills', items: [] },
+      ],
+    });
+    expect(validateModule(module, new Set())).toEqual([]);
+  });
+
+  it('flags a data_structure-only stage type on an algorithm module', () => {
+    const module = baseModule({
+      kind: 'algorithm',
+      stages: [{ type: 'guided_build', title: 'Guided Build', items: [] }],
+    });
+    expect(validateModule(module, new Set()).some((e) => e.includes("stage type 'guided_build'"))).toBe(true);
+  });
+
+  it('flags an algorithm-only stage type on a data_structure module', () => {
+    const module = baseModule({
+      kind: 'data_structure',
+      stages: [{ type: 'algorithm_drills', title: 'Algorithm Drills', items: [] }],
+    });
+    expect(validateModule(module, new Set()).some((e) => e.includes("stage type 'algorithm_drills'"))).toBe(true);
+  });
+
+  it('flags a stage item referencing an unknown question', () => {
+    const module = baseModule({
+      stages: [{ type: 'method_drills', title: 'Method Drills', items: [{ type: 'question', questionId: 'ghost' }] }],
+    });
+    expect(validateModule(module, new Set()).some((e) => e.includes("unknown question 'ghost'"))).toBe(true);
+  });
+
+  it('flags a module with no skills', () => {
+    const module = baseModule({ skills: [] });
+    expect(validateModule(module, new Set()).some((e) => e.includes('has no skills'))).toBe(true);
+  });
+
+  it("flags a skill whose moduleId doesn't match its owning module", () => {
+    const module = baseModule({
+      skills: [{ id: 'test-module/skill', moduleId: 'other-module', title: 'skill', kind: 'method' }],
+    });
+    expect(validateModule(module, new Set()).some((e) => e.includes("moduleId 'other-module'"))).toBe(true);
+  });
+});
+
+describe('validateModuleRegistry', () => {
+  it('flags duplicate module ids', () => {
+    const m1 = baseModule({ id: 'dup' });
+    const m2 = baseModule({ id: 'dup' });
+    expect(validateModuleRegistry([m1, m2], []).some((e) => e.includes("duplicate module id 'dup'"))).toBe(true);
+  });
+
+  it('the real module registry has no validation errors', () => {
+    expect(validateModuleRegistry(modules, questions)).toEqual([]);
   });
 });
