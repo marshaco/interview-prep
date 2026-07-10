@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { COMPARATOR_DISPATCH_PY, DEEP_COMPARATOR_PY, UNORDERED_COMPARATOR_PY } from './comparators';
+import { COMPARATOR_DISPATCH_PY, DEEP_COMPARATOR_PY, FLOAT_CLOSE_COMPARATOR_PY, UNORDERED_COMPARATOR_PY } from './comparators';
 
 /**
  * These tests only assert the *shape of the generated Python source* — they
- * do not execute Python. Real behavioural verification of the comparators
- * (that `_deep_eq`/`_unordered_eq` actually do the right thing inside
- * Pyodide) arrives in Phase 1's Node-side Pyodide CI, which runs every
- * canonical solution through its own harness. Do not read more confidence
- * into these tests than that.
+ * do not execute Python themselves. Real behavioural verification of the
+ * comparators now happens indirectly via canonicalSolutions.test.ts (Node-side
+ * Pyodide), which runs real questions' canonical solutions — and therefore
+ * these comparator functions — through a real interpreter. Don't read more
+ * confidence into *these* string-level tests than that.
  */
 describe('comparator Python source (string-level only, not executed)', () => {
   it('defines _deep_eq using structural equality', () => {
@@ -21,7 +21,15 @@ describe('comparator Python source (string-level only, not executed)', () => {
     expect(UNORDERED_COMPARATOR_PY).toContain('except TypeError:');
   });
 
-  it('dispatch table maps both comparator names to their functions', () => {
-    expect(COMPARATOR_DISPATCH_PY).toBe("_COMPARATORS = {'deep': _deep_eq, 'unordered': _unordered_eq}");
+  it('defines _float_close_eq using math.isclose with a tight tolerance', () => {
+    expect(FLOAT_CLOSE_COMPARATOR_PY).toContain('def _float_close_eq(a, b):');
+    expect(FLOAT_CLOSE_COMPARATOR_PY).toContain('math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-9)');
+    expect(FLOAT_CLOSE_COMPARATOR_PY).toContain('except TypeError:');
+  });
+
+  it('dispatch table maps deep/unordered/float_close to their functions', () => {
+    expect(COMPARATOR_DISPATCH_PY).toBe(
+      "_COMPARATORS = {'deep': _deep_eq, 'unordered': _unordered_eq, 'float_close': _float_close_eq}",
+    );
   });
 });

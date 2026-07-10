@@ -7,6 +7,9 @@ import { reverse } from './modules/linked-list/questions/reverse';
 import { findMiddle } from './modules/linked-list/questions/findMiddle';
 import { detectCycle } from './modules/linked-list/questions/detectCycle';
 import { mergeTwoSorted } from './modules/linked-list/questions/mergeTwoSorted';
+import { buildSinglyLinkedList } from './modules/linked-list/questions/buildSinglyLinkedList';
+import { buildDoublyLinkedList } from './modules/linked-list/questions/buildDoublyLinkedList';
+import { buildCircularLinkedList } from './modules/linked-list/questions/buildCircularLinkedList';
 
 export const questions: CodeQuestion[] = [
   append,
@@ -17,6 +20,9 @@ export const questions: CodeQuestion[] = [
   findMiddle,
   detectCycle,
   mergeTwoSorted,
+  buildSinglyLinkedList,
+  buildDoublyLinkedList,
+  buildCircularLinkedList,
 ];
 
 export const questionsById: ReadonlyMap<QuestionId, CodeQuestion> = new Map(

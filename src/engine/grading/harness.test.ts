@@ -76,3 +76,78 @@ describe('buildHarness', () => {
     expect(visibleGuardCount).toBe(2);
   });
 });
+
+const classSpec: HarnessSpec = {
+  mode: 'class',
+  entryPoint: 'LinkedList',
+  tests: [
+    {
+      id: 'basic',
+      group: 'visible',
+      comparator: 'deep',
+      script: [
+        { op: 'append', args: [1] },
+        { op: 'append', args: [2] },
+        { op: 'to_list', expect: [1, 2] },
+      ],
+    },
+  ],
+};
+
+describe('buildHarness (class mode)', () => {
+  it('instantiates the class fresh per test case rather than reusing one instance', () => {
+    const source = buildHarness(classSpec);
+    expect(source).toContain('_cls = _ns.get(_ENTRY_POINT)');
+    expect(source).toContain('instance = _cls()');
+  });
+
+  it('drives the instance purely through getattr method calls from the script', () => {
+    const source = buildHarness(classSpec);
+    expect(source).toContain("method = getattr(instance, step['op'])");
+    expect(source).toContain("result = method(*step.get('args', []))");
+  });
+
+  it('stops at the first diverging step and records its index, not later steps', () => {
+    const source = buildHarness(classSpec);
+    expect(source).toContain('failed_step_index = i');
+    expect(source).toContain('break');
+  });
+
+  it('checks the entry point is a callable (class), with a class-specific message', () => {
+    const source = buildHarness(classSpec);
+    expect(source).toContain("_error_message = f\"Class '{_ENTRY_POINT}' is not defined.\"");
+  });
+
+  it('only carries the script through for the visible group, keyed off the same guard as function mode', () => {
+    const source = buildHarness(classSpec);
+    const visibleGuardCount = source.split("t['group'] == 'visible'").length - 1;
+    expect(visibleGuardCount).toBe(1);
+  });
+});
+
+describe('buildHarness (checker comparator)', () => {
+  const specWithChecker: HarnessSpec = {
+    mode: 'function',
+    entryPoint: 'is_even',
+    argTypes: ['value'],
+    resultType: 'value',
+    tests: [
+      {
+        id: 'checker-case',
+        group: 'visible',
+        args: [4],
+        expected: null,
+        comparator: 'checker',
+        checker: 'return got is True',
+      },
+    ],
+  };
+
+  it('builds a per-test checker function from the embedded checker body rather than a shared one', () => {
+    const source = buildHarness(specWithChecker);
+    expect(source).toContain("if comparator == 'checker':");
+    expect(source).toContain("exec('def _fn(got, expected):\\n' + textwrap.indent(checker_body, '    ')");
+    // the checker body itself travels inside the base64 _TESTS payload, not string-interpolated
+    expect(source).not.toContain('return got is True');
+  });
+});

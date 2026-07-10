@@ -37,6 +37,8 @@ export function grade(questionId: QuestionId, result: RunResult): Scorecard {
       args: e.args,
       expected: e.expected,
       got: e.got,
+      script: e.script,
+      failedStepIndex: e.failedStepIndex,
     }));
 
   return {

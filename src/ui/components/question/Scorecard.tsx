@@ -56,7 +56,23 @@ export function Scorecard({ result, scorecard }: ScorecardProps) {
             {entry.error && (
               <pre className="mt-1 whitespace-pre-wrap font-mono text-xs text-danger">{entry.error}</pre>
             )}
-            {entry.group === 'visible' && !entry.passed && (
+            {entry.group === 'visible' && !entry.passed && entry.script && (
+              <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-xs text-text-muted">
+                <dt>script</dt>
+                <dd>{JSON.stringify(entry.script)}</dd>
+                {entry.failedStepIndex !== undefined && (
+                  <>
+                    <dt>failed at step</dt>
+                    <dd>{entry.failedStepIndex}</dd>
+                  </>
+                )}
+                <dt>expected</dt>
+                <dd>{JSON.stringify(entry.expected)}</dd>
+                <dt>got</dt>
+                <dd>{JSON.stringify(entry.got)}</dd>
+              </dl>
+            )}
+            {entry.group === 'visible' && !entry.passed && !entry.script && (
               <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-xs text-text-muted">
                 <dt>args</dt>
                 <dd>{JSON.stringify(entry.args)}</dd>

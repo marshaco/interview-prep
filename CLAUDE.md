@@ -4,6 +4,12 @@ Personal interview-prep tool: learn to implement data structures and algorithmic
 patterns from memory, with in-browser Python grading. Static client-only SPA —
 no server, no accounts. Full design in `ARCHITECTURE.md` (read it before any work).
 
+The curriculum is an 18-module roadmap DAG split into two categories
+(ARCHITECTURE.md §4.1): **Data Structures** (`kind: 'data_structure'` — build
+the structure, drill its methods) and **Algorithms** (`kind: 'algorithm'` —
+learn the technique, apply it to problems). V1 ships content for one module of
+each kind (Linked List, Arrays & Hashing); all 18 nodes ship as data.
+
 ## Workflow rules (non-negotiable)
 
 - Work on **exactly one phase at a time** (see Phases below). Never start work
@@ -29,6 +35,9 @@ no server, no accounts. Full design in `ARCHITECTURE.md` (read it before any wor
   comparing code text.
 - User state references content by stable string ids (`ModuleId`, `SkillId`,
   `QuestionId`). Content is never stored in the database.
+- `ModuleKind` is `'data_structure' | 'algorithm'` and determines the stage
+  template (§4.3). Kind/stage mismatches (e.g. an `algorithm` module with
+  `guided_build`) must fail content validation — never special-case them in code.
 
 ## Stack
 
@@ -85,30 +94,39 @@ Export/import versioned JSON bundle. **DoD:** refresh/reopen preserves drafts,
 attempt history, and stars; export→wipe→import restores everything.
 
 ### Phase 3 — Learning flow
-Full module/stage content model with `ModuleKind` discriminator and stage
-templates (§4.2) — build kind-aware from the start. Learn-stage lesson
-renderer (markdown sections). Guided Build stepper (chained questions, each
-step's starter = previous solution + TODO). Hints ladder with recorded usage
-feeding mastery caps. Complete the Linked List module: Learn, Guided Build,
-Independent Build, Method Drills. **DoD:** Linked List playable start-to-finish
-through four stages.
+Full module/stage content model with the `ModuleKind` discriminator
+(`'data_structure' | 'algorithm'`) and kind-specific stage templates (§4.3) —
+build kind-aware from the start, including the algorithm-kind stage types
+(`guided_apply`, `algorithm_drills`) even though no algorithm content ships
+yet. Learn-stage lesson renderer (markdown sections). Guided Build stepper
+(chained questions, each step's starter = previous solution + TODO). Hints
+ladder with recorded usage feeding mastery caps. Complete the Linked List
+module: Learn, Guided Build, Independent Build, Method Drills.
+**DoD:** Linked List playable start-to-finish through four stages.
 
 ### Phase 4 — Roadmap + module pages
-React Flow roadmap of all 17 nodes from ARCHITECTURE.md (15 as "coming soon"
-ghosts); custom nodes with progress ring + stars; soft locking only. Module
-page with per-stage completion. **DoD:** roadmap is the home page and reflects
-real mastery data.
+Author the **full 18-module catalog as data** per ARCHITECTURE.md §4.1: ids,
+titles, categories, prerequisite edges, skill lists, and stage skeletons for
+every node in both categories (6 Data Structures, 12 Algorithms). Extend
+content validation to check DAG integrity (all 18 ids present, no dangling
+edges, no cycles) and kind/stage-template conformance across the catalog.
+React Flow roadmap of all 18 nodes (16 as "coming soon" ghosts); custom nodes
+with progress ring + stars, visually distinguished by category (distinct
+accent treatment for Data Structures vs Algorithms); soft locking only.
+Module page with per-stage completion. **DoD:** roadmap is the home page,
+shows both categories distinctly, and reflects real mastery data;
+`npm run check` fails on any DAG or kind/stage violation.
 
 ### Phase 5 — SRS + dashboard
 SM-2-lite scheduler (§7.3) as a pure, property-tested function. Today's Review
 queue + review route. Day log + streaks (§7.4). Trimmed dashboard: mastery by
-module, current/longest streak, Today's Review, weakest skills, recent
-attempts. **DoD:** failing a question tomorrow brings its skill back sooner;
-dashboard numbers reconcile with attempt history.
+module grouped by category, current/longest streak, Today's Review, weakest
+skills, recent attempts. **DoD:** failing a question tomorrow brings its skill
+back sooner; dashboard numbers reconcile with attempt history.
 
-### Phase 6 — Pattern kind: Arrays & Hashing
-Full Arrays & Hashing module using `kind: 'pattern'`: Learn, Guided Apply,
-Pattern Drills, Interview-ready questions (frequency counting, hash set
+### Phase 6 — Algorithm kind: Arrays & Hashing
+Full Arrays & Hashing module using `kind: 'algorithm'`: Learn, Guided Apply,
+Algorithm Drills, Interview-ready questions (frequency counting, hash set
 membership, anagram grouping, two-sum pattern, prefix products). No engine
 changes should be needed — if they are, flag it as a design bug first.
 **DoD:** both module kinds complete end-to-end.

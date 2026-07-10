@@ -1,6 +1,6 @@
 # Architecture Document — V1 (Static Client-Only)
 
-**Status:** Approved direction · **Scope:** Vertical slice — Arrays & Hashing + Linked List, full learning loop
+**Status:** Approved direction · **Scope:** Vertical slice — Arrays & Hashing + Linked List, full learning loop · **Roadmap catalog:** all 18 modules defined as data in Phase 1
 **Deployment target:** Static hosting (Cloudflare Pages / Vercel static / GitHub Pages)
 
 ---
@@ -9,14 +9,19 @@
 
 A personal interview-preparation tool that teaches fluency in data structures and algorithmic patterns *before* problem-solving. V1 is a client-only application: no server, no accounts, no sync. All persistence is local (IndexedDB) behind a storage adapter so a backend can be added later without touching application code.
 
-The vertical slice deliberately covers **one module of each kind**:
+The roadmap is organised into **two categories**, each with its own learning template:
 
-- **Linked List** — `kind: 'data_structure'` → exercises the full 5-stage pipeline (Learn → Guided Build → Independent Build → Method Drills → Interview Mode).
-- **Arrays & Hashing** — `kind: 'pattern'` → exercises the pattern variant (Learn → Guided Apply → Pattern Drills → Interview Mode). There is no `HashMapPattern` class to build; the "build" stages are replaced by applying the pattern to scaffolded problems.
+- **Data Structures** (`kind: 'data_structure'`) — you build the structure itself, then drill its methods. Full 5-stage pipeline: Learn → Guided Build → Independent Build → Method Drills → Interview Mode.
+- **Algorithms** (`kind: 'algorithm'`) — there is nothing to "build"; you learn the technique and apply it to scaffolded problems. Pipeline: Learn → Guided Apply → Algorithm Drills → Interview Mode.
+
+The full 18-module catalog (§4.1) ships as **data** in Phase 1 — every node, edge, skill list, and stage skeleton is defined and rendered on the roadmap from day one. Only two modules ship with *content* in V1, one of each kind:
+
+- **Linked List** — `kind: 'data_structure'` → exercises the full build pipeline.
+- **Arrays & Hashing** — `kind: 'algorithm'` → exercises the apply pipeline.
 
 If both kinds work end-to-end, every remaining roadmap node is a content problem, not an engineering problem. That is the definition of done for V1.
 
-**Explicitly out of scope for V1** (but designed-for): server-side execution, AI code review, LLM style scoring, advanced complexity analysis, leaderboards, accounts/sync, the remaining 15 roadmap modules.
+**Explicitly out of scope for V1** (but designed-for): server-side execution, AI code review, LLM style scoring, advanced complexity analysis, leaderboards, accounts/sync, content for the remaining 16 roadmap modules.
 
 ---
 
@@ -70,14 +75,65 @@ Rules that keep this honest:
 
 ## 4. Content Model
 
-### 4.1 The kind discriminator
+### 4.1 Module catalog — two categories, 18 modules
+
+The catalog below is the complete roadmap DAG shipped as data in Phase 1. Prerequisite edges follow the standard interview-prep progression (Arrays & Hashing at the root, Math & Geometry at the leaves).
+
+**Category: Data Structures** (`kind: 'data_structure'`) — build it, then drill its methods.
+
+| id | Title | Prerequisites | Representative skills (examples) |
+|---|---|---|---|
+| `stack` | Stack | `arrays-hashing` | push/pop/peek, monotonic stack, valid parentheses |
+| `linked-list` | Linked List | `two-pointers` | append, reverse, cycle detect, merge, fast/slow |
+| `trees` | Trees | `binary-search`, `linked-list` | insert, DFS/BFS traversals, depth, invert, validate BST |
+| `tries` | Tries | `trees` | insert, search, startsWith, word search backtrack |
+| `heap-pq` | Heap / Priority Queue | `trees` | sift-up/down, heapify, k-th element, two-heap median |
+| `graphs` | Graphs | `backtracking` | adjacency build, BFS/DFS, connected components, topo sort |
+
+**Category: Algorithms** (`kind: 'algorithm'`) — learn the technique, apply it to problems.
+
+| id | Title | Prerequisites | Representative skills (examples) |
+|---|---|---|---|
+| `arrays-hashing` | Arrays & Hashing | — (root) | frequency count, seen-set, prefix sums, grouping by key |
+| `two-pointers` | Two Pointers | `arrays-hashing` | converging pointers, partition, pair-sum on sorted input |
+| `binary-search` | Binary Search | `two-pointers` | classic search, boundary (first/last true), search on answer |
+| `sliding-window` | Sliding Window | `two-pointers` | fixed window, variable window, window with hashmap state |
+| `backtracking` | Backtracking | `trees` | subsets, permutations, constraint pruning |
+| `intervals` | Intervals | `heap-pq` | merge, insert, overlap detection, sweep |
+| `greedy` | Greedy | `heap-pq` | exchange argument, local-choice proofs, jump/stock patterns |
+| `advanced-graphs` | Advanced Graphs | `heap-pq`, `graphs` | Dijkstra, union-find, MST, topological orderings |
+| `dp-1d` | 1-D DP | `backtracking` | memoization, tabulation, house-robber/climb patterns |
+| `dp-2d` | 2-D DP | `dp-1d`, `graphs` | grid paths, LCS, edit distance, knapsack |
+| `bit-manipulation` | Bit Manipulation | `dp-1d` | masks, XOR tricks, counting bits, shifts |
+| `math-geometry` | Math & Geometry | `dp-2d`, `bit-manipulation`, `graphs` | matrix rotation, spiral, pow/modular arithmetic, GCD |
+
+DAG edges (child listed under parent), matching the reference roadmap:
+
+```
+arrays-hashing → two-pointers, stack
+two-pointers   → binary-search, sliding-window, linked-list
+binary-search  → trees
+linked-list    → trees
+trees          → tries, backtracking, heap-pq
+heap-pq        → intervals, greedy, advanced-graphs
+backtracking   → graphs, dp-1d
+graphs         → advanced-graphs, dp-2d, math-geometry
+dp-1d          → dp-2d, bit-manipulation
+dp-2d          → math-geometry
+bit-manipulation → math-geometry
+```
+
+**Note on Graphs:** it sits in Data Structures because there is a genuine build pipeline (adjacency list/matrix classes, BFS/DFS as methods) even though most of its interview value is algorithmic. Its algorithm-heavy sequel, Advanced Graphs, sits in the Algorithms category. This split mirrors how the two kinds' stage templates differ.
+
+### 4.2 The kind discriminator
 
 ```ts
 // content/types.ts
-export type ModuleKind = 'data_structure' | 'pattern';
+export type ModuleKind = 'data_structure' | 'algorithm';
+export type ModuleCategory = 'Data Structures' | 'Algorithms';  // display grouping; derived 1:1 from kind
 
 export interface RoadmapModule {
-  id: ModuleId;                    // 'linked-list', 'arrays-hashing', ...
+  id: ModuleId;                    // 'linked-list', 'arrays-hashing', ... (18 total, §4.1)
   kind: ModuleKind;
   title: string;
   summary: string;
@@ -87,7 +143,9 @@ export interface RoadmapModule {
 }
 ```
 
-### 4.2 Stage templates per kind
+**Decision record — rename `'pattern'` → `'algorithm'`:** the earlier draft called the second kind `pattern`. It is renamed to `algorithm` so the code taxonomy matches the two user-facing categories (Data Structures / Algorithms) exactly. Pure rename; the stage template and pipeline are unchanged. Stage and skill identifiers are renamed to match (`pattern_drills` → `algorithm_drills`, `pattern_application` → `algorithm_application`, `pattern_problem` → `algorithm_problem`).
+
+### 4.3 Stage templates per kind
 
 ```ts
 export type StageType =
@@ -95,8 +153,8 @@ export type StageType =
   | 'guided_build'       // data_structure only
   | 'independent_build'  // data_structure only
   | 'method_drills'      // data_structure only
-  | 'guided_apply'       // pattern only — scaffolded walkthrough of the pattern
-  | 'pattern_drills'     // pattern only — apply pattern to fresh problems
+  | 'guided_apply'       // algorithm only — scaffolded walkthrough of the technique
+  | 'algorithm_drills'   // algorithm only — apply technique to fresh problems
   | 'interview_mode';    // both kinds
 
 export interface Stage {
@@ -106,9 +164,9 @@ export interface Stage {
 }
 ```
 
-A validation function (`content/validate.ts`, run in CI) enforces that stage sequences match the kind — a `pattern` module containing `guided_build` fails the build. Invalid content cannot ship.
+A validation function (`content/validate.ts`, run in CI) enforces that stage sequences match the kind — an `algorithm` module containing `guided_build` fails the build. It also validates the DAG itself: all 18 ids present, edges reference known ids, no cycles. Invalid content cannot ship.
 
-### 4.3 Skills — the atom of progress
+### 4.4 Skills — the atom of progress
 
 Mastery is tracked per **skill**, not per question. A skill is something like `linked-list/reverse` or `arrays-hashing/frequency-count`. Many questions can exercise one skill; one question may exercise several.
 
@@ -117,22 +175,22 @@ export interface Skill {
   id: SkillId;                     // 'linked-list/append'
   moduleId: ModuleId;
   title: string;                   // 'append()'
-  kind: 'method' | 'full_structure' | 'pattern_application' | 'concept';
+  kind: 'method' | 'full_structure' | 'algorithm_application' | 'concept';
 }
 ```
 
 This indirection is what makes the dashboard ("weakest topics"), spaced repetition ("review append(), it's decaying"), and the star display all coherent — they all read the same per-skill records.
 
-### 4.4 Questions
+### 4.5 Questions
 
 ```ts
 export type QuestionKind =
-  | 'method_impl' | 'full_impl' | 'pattern_problem'
+  | 'method_impl' | 'full_impl' | 'algorithm_problem'
   | 'conceptual' | 'complexity' | 'debugging';
 
 export interface CodeQuestion {
   id: QuestionId;
-  kind: 'method_impl' | 'full_impl' | 'pattern_problem' | 'debugging';
+  kind: 'method_impl' | 'full_impl' | 'algorithm_problem' | 'debugging';
   moduleId: ModuleId;
   skillIds: SkillId[];
   prompt: string;                  // markdown
@@ -170,15 +228,19 @@ src/
 ├── content/
 │   ├── types.ts                  # all content interfaces
 │   ├── registry.ts               # exports Map<ModuleId, RoadmapModule>
-│   ├── roadmap.ts                # DAG: all 17 node ids + edges (only 2 populated in V1)
-│   ├── validate.ts               # structural validation, run in CI
+│   ├── roadmap.ts                # DAG: all 18 node ids + edges + categories (2 with content in V1)
+│   ├── validate.ts               # structural + DAG validation, run in CI
 │   └── modules/
-│       ├── linked-list/
+│       ├── linked-list/          # category: Data Structures
 │       │   ├── module.ts         # stages, skills
 │       │   ├── lessons/          # learn-stage markdown/MDX-like sections
 │       │   └── questions/        # one file per question
-│       └── arrays-hashing/
-│           └── ... same shape
+│       ├── arrays-hashing/       # category: Algorithms
+│       │   └── ... same shape
+│       └── (16 more folders land post-V1: stack/, trees/, tries/, heap-pq/,
+│            graphs/, two-pointers/, binary-search/, sliding-window/,
+│            backtracking/, intervals/, greedy/, advanced-graphs/,
+│            dp-1d/, dp-2d/, bit-manipulation/, math-geometry/)
 ├── engine/
 │   ├── runner/
 │   │   ├── types.ts              # PythonRunner interface + message protocol
@@ -390,7 +452,7 @@ A code-driven visualization has to see inside the user's structure. V1 uses **tr
 export interface VizFrame { step: number; label: string; state: Json }  // e.g. [3,1,4,1,5]
 ```
 
-The UI plays frames through a `LinkedListView` SVG renderer (nodes, arrows, highlight diffs between frames). This is *post-hoc replay*, not live stepping — dramatically simpler, no Python debugger integration, and covers the pedagogical need ("watch your append actually attach the node"). The frame protocol is generic; tree/heap renderers later just add new state shapes and renderers, no engine changes.
+The UI plays frames through a `LinkedListView` SVG renderer (nodes, arrows, highlight diffs between frames). This is *post-hoc replay*, not live stepping — dramatically simpler, no Python debugger integration, and covers the pedagogical need ("watch your append actually attach the node"). The frame protocol is generic; tree/heap/graph renderers later just add new state shapes and renderers, no engine changes — which is exactly what the Trees, Heap / Priority Queue, and Graphs modules will need.
 
 The Learn stage additionally uses hand-authored animations (small React components) that don't depend on user code at all.
 
@@ -398,11 +460,11 @@ The Learn stage additionally uses hand-authored animations (small React componen
 
 ## 10. UI Surface (V1)
 
-- **Roadmap** — React Flow DAG of all 17 nodes; 15 render as "coming soon" ghosts. Custom node = title + progress ring + mastery stars. Soft locking only: prerequisites are *recommended*, nothing is hard-locked (this is a personal tool; hard gates are friction without a reason).
+- **Roadmap** — React Flow DAG of all 18 nodes; 16 render as "coming soon" ghosts. Custom node = title + progress ring + mastery stars. Nodes are visually distinguished by category (one accent treatment for Data Structures, another for Algorithms) so the two-track shape of the curriculum is legible at a glance. Soft locking only: prerequisites are *recommended*, nothing is hard-locked (this is a personal tool; hard gates are friction without a reason).
 - **Module page** — stage list with per-stage completion.
 - **Question player** — split pane: prompt/hints left, Monaco right, results/viz bottom. Run (visible tests) / Submit (full grade) / Reset / auto-saving Draft / Notes drawer. Hints ladder unlocks 1→4 with confirmation; hint usage recorded.
 - **Interview mode** — same player, chrome stripped: no hints, timer visible, grade shown only after submit.
-- **Dashboard (trimmed)** — mastery overview by module, current/longest streak, Today's Review, weakest skills, recent attempts. The full 16-metric dashboard from the original brief is post-V1; these six are the ones with real data behind them on day one.
+- **Dashboard (trimmed)** — mastery overview by module (grouped by category), current/longest streak, Today's Review, weakest skills, recent attempts. The full 16-metric dashboard from the original brief is post-V1; these six are the ones with real data behind them on day one.
 - **Review** — the daily queue, one question at a time.
 - **Settings** — theme, editor prefs, export/import, wipe data.
 
@@ -417,15 +479,17 @@ Each phase ends green (typecheck, tests, deploy) and usable. Estimates assume pa
 | # | Phase | Delivers | Est. |
 |---|---|---|---|
 | 0 | Scaffold | Vite+TS strict+Tailwind+Router, CI (typecheck/lint/test/build), tokens, deploy pipeline | ½ wk |
-| 1 | Content spine | `content/types.ts`, registry, validation, roadmap DAG data, Roadmap page (static) | ½–1 wk |
+| 1 | Content spine | `content/types.ts` with the two-category taxonomy, registry, validation (stage templates + DAG integrity), **full 18-module roadmap data** — ids, titles, categories, edges, skill lists, stage skeletons for every node in §4.1 — Roadmap page (static, category-styled nodes) | 1 wk |
 | 2 | Execution | Pyodide worker + protocol, `PyodideRunner`, warm-spare lifecycle, editor route with Run + stdout | 1 wk |
 | 3 | Grading | Harness builder (function+class modes), comparators, Scorecard UI; ~8 Linked List method questions live; CI runs canonical solutions | 1–1½ wk |
 | 4 | Persistence | Dexie + adapter, attempts, drafts, mastery engine, stars on roadmap/module pages, export/import | 1 wk |
 | 5 | Learning flow | Guided Build stepper, hints ladder, Learn-stage lesson renderer; Linked List content complete through Independent Build | 1–1½ wk |
 | 6 | SRS + Dashboard | Scheduler, Today's Review, streaks, trimmed dashboard | 1 wk |
-| 7 | Pattern kind | Arrays & Hashing module end-to-end (guided_apply, pattern_drills) — proves the discriminator | 1 wk |
+| 7 | Algorithm kind | Arrays & Hashing module end-to-end (guided_apply, algorithm_drills) — proves the discriminator | 1 wk |
 | 8 | Viz + Interview | Linked List replay visualization; Interview Mode | 1 wk |
 | 9 | Polish | Shortcuts, transitions, a11y pass, empty states, error states | ongoing |
+
+Phase 1 grows slightly (½–1 wk → 1 wk) to absorb authoring the full catalog data: 18 module stubs with skills and stage skeletons rather than 2. This is deliberate — defining every node's skills up front forces the taxonomy to be right before any grading code depends on it, and the roadmap page is honest about the full curriculum from day one.
 
 **Milestone worth noticing:** the app becomes *useful to you* at the end of Phase 3 (~3 weeks in) — you can drill Linked List methods with real grading. Everything after that compounds value; nothing before Phase 3 should be gold-plated.
 
@@ -437,7 +501,7 @@ Each phase ends green (typecheck, tests, deploy) and usable. Estimates assume pa
 - **Accounts & sync** — `SupabaseAdapter: StorageAdapter`; `ExportBundleV1` seeds the first upload. Appendix A is the target schema.
 - **AI code review / style scoring** — populate the reserved `style`/`readability` fields on `Scorecard` via an API call after local grading; UI already renders a scorecard, new rows appear.
 - **Complexity analysis** — empirical: harness runs entry point at n, 10n, 100n and fits a curve; fills the reserved `complexity` field. Noisy in Pyodide; better post-ServerRunner.
-- **More modules** — add a folder under `content/modules/`, register it, done. No engine work unless a new visualization shape is needed.
+- **More modules** — the remaining 16 nodes are already defined as data (§4.1); shipping one means writing its content folder under `content/modules/` and flipping it from ghost to live. Suggested authoring order follows the DAG: Stack → Two Pointers → Binary Search → Sliding Window → Trees → … No engine work unless a new visualization shape is needed (trees, heaps, and graphs will each want one).
 - **Leaderboards / social** — blocked on server execution by design; nothing in V1 pretends otherwise.
 
 ---
@@ -464,4 +528,3 @@ day_log          (user_id fk, day date, pk (user_id, day))
 ```
 
 Sync strategy when it lands: last-write-wins per row keyed on `updated_at`, with append-only tables (attempts, notes) merged by id — simple, adequate, and honest about not being CRDTs.
-

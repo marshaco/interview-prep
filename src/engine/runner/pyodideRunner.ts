@@ -10,24 +10,21 @@ interface PendingRun {
 }
 
 /**
- * Single-worker PythonRunner. Timeout and cancellation both use the same
- * blunt recovery path: terminate the worker and spawn a fresh one. This is
- * deliberately crude — see ARCHITECTURE §6.2 — rather than relying on
- * SharedArrayBuffer interrupts, which need COOP/COEP headers this app's
- * static hosting targets can't guarantee. A warm-spare worker (so recovery
- * doesn't pay the ~2-4s Pyodide boot cost) arrives in Phase 1.
+ * One Pyodide-backed worker plus its own boot lifecycle. `onExecResult` is
+ * wired externally and only ever fires for the slot currently acting as
+ * "hot" — see PyodideRunner.recoverWithStatus, which rewires it on promotion.
  */
-export class PyodideRunner implements PythonRunner {
-  private worker: Worker;
-  private readyState: ReadyState = 'booting';
-  private readyWaiters: Array<() => void> = [];
-  private pending: PendingRun | null = null;
+class WorkerSlot {
+  worker: Worker;
+  private state: ReadyState = 'booting';
+  private waiters: Array<() => void> = [];
+  onExecResult: ((message: Extract<WorkerResponse, { type: 'exec-result' }>) => void) | null = null;
 
   constructor() {
-    this.worker = this.spawnWorker();
+    this.worker = this.boot();
   }
 
-  private spawnWorker(): Worker {
+  private boot(): Worker {
     const worker = new Worker(new URL('../../workers/pyodide.worker.ts', import.meta.url), {
       type: 'module',
     });
@@ -35,28 +32,70 @@ export class PyodideRunner implements PythonRunner {
       this.handleMessage(event.data);
     };
     worker.onerror = () => {
-      this.readyState = 'error';
+      this.state = 'error';
     };
-    this.readyState = 'booting';
+    this.state = 'booting';
     worker.postMessage({ type: 'init' });
     return worker;
   }
 
   private handleMessage(message: WorkerResponse): void {
     if (message.type === 'ready') {
-      this.readyState = 'ready';
-      this.readyWaiters.splice(0).forEach((resolve) => {
+      this.state = 'ready';
+      this.waiters.splice(0).forEach((resolve) => {
         resolve();
       });
       return;
     }
-
     if (message.type === 'init-error') {
-      this.readyState = 'error';
+      this.state = 'error';
       return;
     }
+    if (message.type === 'exec-result') {
+      this.onExecResult?.(message);
+    }
+  }
 
-    if (message.type === 'exec-result' && this.pending?.runId === message.runId) {
+  get isReady(): boolean {
+    return this.state === 'ready';
+  }
+
+  async waitUntilReady(): Promise<void> {
+    if (this.state === 'ready') return;
+    if (this.state === 'error') {
+      this.worker = this.boot();
+    }
+    await new Promise<void>((resolve) => this.waiters.push(resolve));
+  }
+
+  terminate(): void {
+    this.worker.terminate();
+  }
+}
+
+/**
+ * PythonRunner backed by a hot worker plus one warm spare, per
+ * ARCHITECTURE §6.2. Timeout and cancellation both promote the spare (already
+ * loaded) to hot immediately and boot a fresh spare in the background, so
+ * the *next* run doesn't pay Pyodide's ~2-4s boot cost — only the terminated
+ * run itself is lost. If the spare isn't ready yet (e.g. back-to-back
+ * timeouts faster than a spare can boot), this falls back to a cold boot,
+ * same as if there were no spare at all.
+ */
+export class PyodideRunner implements PythonRunner {
+  private hot: WorkerSlot;
+  private spare: WorkerSlot;
+  private pending: PendingRun | null = null;
+
+  constructor() {
+    this.hot = new WorkerSlot();
+    this.wireHot(this.hot);
+    this.spare = new WorkerSlot();
+  }
+
+  private wireHot(slot: WorkerSlot): void {
+    slot.onExecResult = (message) => {
+      if (this.pending?.runId !== message.runId) return;
       const pending = this.pending;
       this.pending = null;
       clearTimeout(pending.timer);
@@ -68,15 +107,11 @@ export class PyodideRunner implements PythonRunner {
         report: message.report,
         durationMs: message.durationMs,
       });
-    }
+    };
   }
 
   async warmup(): Promise<void> {
-    if (this.readyState === 'ready') return;
-    if (this.readyState === 'error') {
-      this.worker = this.spawnWorker();
-    }
-    await new Promise<void>((resolve) => this.readyWaiters.push(resolve));
+    await this.hot.waitUntilReady();
   }
 
   async run(request: RunRequest): Promise<RunResult> {
@@ -87,7 +122,7 @@ export class PyodideRunner implements PythonRunner {
         this.recoverWithStatus(request.runId, 'timeout');
       }, request.timeoutMs);
       this.pending = { runId: request.runId, resolve, timer, startedAt };
-      this.worker.postMessage({
+      this.hot.worker.postMessage({
         type: 'exec',
         runId: request.runId,
         userCode: request.userCode,
@@ -109,8 +144,17 @@ export class PyodideRunner implements PythonRunner {
     clearTimeout(timer);
     this.pending = null;
 
-    this.worker.terminate();
-    this.worker = this.spawnWorker();
+    this.hot.terminate();
+
+    if (this.spare.isReady) {
+      this.hot = this.spare;
+      this.wireHot(this.hot);
+    } else {
+      this.spare.terminate();
+      this.hot = new WorkerSlot();
+      this.wireHot(this.hot);
+    }
+    this.spare = new WorkerSlot();
 
     resolve({
       runId,

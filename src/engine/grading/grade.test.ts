@@ -65,6 +65,23 @@ describe('grade', () => {
     expect(scorecard.failures[1]?.error).toBe('IndexError: pop from empty list');
   });
 
+  it('carries script/failedStepIndex through for class-mode visible failures', () => {
+    const result = okResult([
+      {
+        id: 'v1',
+        group: 'visible',
+        passed: false,
+        script: [{ op: 'append', args: [1] }, { op: 'to_list', expect: [1, 2] }],
+        failedStepIndex: 1,
+        expected: [1, 2],
+        got: [1],
+      },
+    ]);
+    const scorecard = grade('linked-list/build-singly-linked-list', result);
+    expect(scorecard.failures[0]?.script).toEqual([{ op: 'append', args: [1] }, { op: 'to_list', expect: [1, 2] }]);
+    expect(scorecard.failures[0]?.failedStepIndex).toBe(1);
+  });
+
   it('reserves style/readability/complexity as null', () => {
     const scorecard = grade('linked-list/append', okResult([]));
     expect(scorecard.style).toBeNull();
