@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0b0d12;
+  --color-bg-raised: #12151c;
+  --color-bg-inset: #06070a;
+  --color-border: #23262f;
+  --color-text: #e6e8ec;
+  --color-text-muted: #8b909c;
+  --color-accent: #5b8cff;
+  --color-accent-muted: #2c3a63;
+  --color-success: #3ecf8e;
+  --color-danger: #ef5a5a;
+
+  --ease-out-motion: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
