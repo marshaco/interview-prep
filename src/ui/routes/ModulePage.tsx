@@ -4,6 +4,7 @@ import { getModule, getQuestion } from '../../content/registry';
 import { masteryStars } from '../../engine/mastery/mastery';
 import { storageAdapter } from '../storageAdapter';
 import { StarRating } from '../components/common/StarRating';
+import { AppNav } from '../components/common/AppNav';
 import type { Attempt, SkillMastery } from '../../storage/types';
 import type { QuestionId, SkillId, StageType } from '../../content/types';
 
@@ -50,7 +51,9 @@ export function ModulePage() {
   const accentClass = category === 'Data Structures' ? 'text-accent' : 'text-accent-secondary';
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-2xl">
+      <AppNav />
+      <div className="px-6 py-10">
       <Link to="/" className="text-sm text-text-muted hover:text-accent">
         ← Roadmap
       </Link>
@@ -109,6 +112,7 @@ export function ModulePage() {
           </section>
         );
       })}
+      </div>
     </div>
   );
 }

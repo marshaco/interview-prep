@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildHarness } from '../../engine/grading/harness';
 import { grade } from '../../engine/grading/grade';
 import { updateMastery } from '../../engine/mastery/mastery';
+import { deriveReviewQuality, review } from '../../engine/srs/scheduler';
+import { localDateIso } from '../../engine/srs/streaks';
 import { pythonRunner } from '../pythonRunner';
 import { storageAdapter } from '../storageAdapter';
 import type { RunResult } from '../../engine/runner/types';
@@ -103,14 +105,23 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
       durationMs,
       createdAt: now,
     });
-    await storageAdapter.logActiveDay(now.slice(0, 10));
+    // Local date, not now.slice(0, 10) (which is UTC) — a day's activity
+    // must land on the user's actual calendar day for streaks to be honest.
+    await storageAdapter.logActiveDay(localDateIso(new Date()));
 
     const masteryRecords = await storageAdapter.getMastery();
+    const reviewRecords = await storageAdapter.getReviewRecords();
+    const quality = deriveReviewQuality(scorecard.overall, hintsRevealed);
+
     await Promise.all(
-      question.skillIds.map((skillId) => {
-        const previous = masteryRecords.find((m) => m.skillId === skillId);
-        const updated = updateMastery(previous, skillId, scorecard.overall, hintsRevealed, now);
-        return storageAdapter.upsertMastery(updated);
+      question.skillIds.flatMap((skillId) => {
+        const previousMastery = masteryRecords.find((m) => m.skillId === skillId);
+        const updatedMastery = updateMastery(previousMastery, skillId, scorecard.overall, hintsRevealed, now);
+
+        const previousReview = reviewRecords.find((r) => r.skillId === skillId);
+        const updatedReview = review(previousReview, skillId, quality, now);
+
+        return [storageAdapter.upsertMastery(updatedMastery), storageAdapter.upsertReviewRecord(updatedReview)];
       }),
     );
   }

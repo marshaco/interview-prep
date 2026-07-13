@@ -7,6 +7,7 @@ import { moduleProgress } from '../../engine/mastery/mastery';
 import { storageAdapter } from '../storageAdapter';
 import { RoadmapNode, type RoadmapNodeType } from '../components/roadmap/RoadmapNode';
 import { computeRoadmapPositions } from '../components/roadmap/roadmapLayout';
+import { AppNav } from '../components/common/AppNav';
 import type { SkillId } from '../../content/types';
 import type { SkillMastery } from '../../storage/types';
 
@@ -62,6 +63,7 @@ export function RoadmapPage() {
 
   return (
     <div className="flex h-screen flex-col bg-bg text-text">
+      <AppNav />
       <header className="border-b border-border px-4 py-3">
         <h1 className="text-lg font-semibold">Interview Prep Roadmap</h1>
         <p className="text-sm text-text-muted">
