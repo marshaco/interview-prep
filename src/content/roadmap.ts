@@ -1,5 +1,6 @@
 import type { RoadmapModule, Skill, Stage } from './types';
 import { linkedListModule } from './modules/linked-list/module';
+import { arraysHashingModule } from './modules/arrays-hashing/module';
 
 /**
  * The 17 modules that don't have real content yet — stage skeletons only
@@ -93,21 +94,6 @@ const graphs: RoadmapModule = {
     skills('graphs', 'concept', ['connected components', 'topo sort']),
   ),
   stages: dataStructureStages(),
-};
-
-const arraysHashing: RoadmapModule = {
-  id: 'arrays-hashing',
-  kind: 'algorithm',
-  title: 'Arrays & Hashing',
-  summary: 'Frequency counting, seen-sets, prefix sums, and grouping by key — the roadmap root.',
-  prerequisites: [],
-  skills: skills('arrays-hashing', 'algorithm_application', [
-    'frequency count',
-    'seen-set',
-    'prefix sums',
-    'grouping by key',
-  ]),
-  stages: algorithmStages(),
 };
 
 const twoPointers: RoadmapModule = {
@@ -255,7 +241,7 @@ export const roadmapModules: RoadmapModule[] = [
   heapPq,
   graphs,
   // Algorithms
-  arraysHashing,
+  arraysHashingModule,
   twoPointers,
   binarySearch,
   slidingWindow,

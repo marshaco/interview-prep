@@ -1,12 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getModule } from '../../content/registry';
 import { MarkdownContent } from '../components/common/MarkdownContent';
 
-const MODULE_ID = 'linked-list';
-
 export function LearnPage() {
-  const module = getModule(MODULE_ID);
+  const { moduleId } = useParams<{ moduleId: string }>();
+  const module = moduleId ? getModule(moduleId) : undefined;
   const learnStage = module?.stages.find((stage) => stage.type === 'learn');
+  const nextStage = module?.stages.find((stage) => stage.type === 'guided_build' || stage.type === 'guided_apply');
 
   if (!module || !learnStage) {
     return (
@@ -19,9 +19,13 @@ export function LearnPage() {
     );
   }
 
+  const nextHref = nextStage
+    ? `/modules/${module.id}/${nextStage.type === 'guided_build' ? 'guided-build' : 'guided-apply'}/1`
+    : `/modules/${module.id}`;
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
-      <Link to={`/modules/${MODULE_ID}`} className="text-sm text-text-muted hover:text-accent">
+      <Link to={`/modules/${module.id}`} className="text-sm text-text-muted hover:text-accent">
         ← Back to module
       </Link>
       <h1 className="mb-1 mt-4 text-xl font-semibold text-text">{module.title}: Learn</h1>
@@ -35,11 +39,8 @@ export function LearnPage() {
           ) : null,
         )}
       </div>
-      <Link
-        to="/guided-build/1"
-        className="mt-8 inline-block rounded bg-accent px-4 py-2 text-sm font-medium text-white"
-      >
-        Continue to Guided Build →
+      <Link to={nextHref} className="mt-8 inline-block rounded bg-accent px-4 py-2 text-sm font-medium text-white">
+        Continue to {nextStage?.title ?? 'module'} →
       </Link>
     </div>
   );

@@ -9,8 +9,9 @@ import type { Attempt, SkillMastery } from '../../storage/types';
 import type { QuestionId, SkillId, StageType } from '../../content/types';
 
 const STAGE_LINKS: Partial<Record<StageType, string>> = {
-  learn: '/learn',
-  guided_build: '/guided-build/1',
+  learn: 'learn',
+  guided_build: 'guided-build/1',
+  guided_apply: 'guided-apply/1',
 };
 
 function isSolved(attempts: Attempt[], questionId: QuestionId): boolean {
@@ -82,7 +83,7 @@ export function ModulePage() {
 
             {hasContent && stageLink && (
               <Link
-                to={stageLink}
+                to={`/modules/${module.id}/${stageLink}`}
                 className="block rounded border border-border bg-bg-raised px-4 py-3 text-sm text-text transition-colors hover:border-accent"
               >
                 {stage.type === 'learn' ? 'Start Learn' : `Start ${stage.title} (${questionItems.length} steps)`}

@@ -4,7 +4,7 @@ import { RoadmapPage } from './ui/routes/RoadmapPage';
 import { ModulePage } from './ui/routes/ModulePage';
 import { QuestionPlayerPage } from './ui/routes/QuestionPlayerPage';
 import { LearnPage } from './ui/routes/LearnPage';
-import { GuidedBuildPage } from './ui/routes/GuidedBuildPage';
+import { GuidedSequencePage } from './ui/routes/GuidedSequencePage';
 import { DashboardPage } from './ui/routes/DashboardPage';
 import { ReviewPage } from './ui/routes/ReviewPage';
 import { pythonRunner } from './ui/pythonRunner';
@@ -19,8 +19,8 @@ function App() {
       <Routes>
         <Route path="/" element={<RoadmapPage />} />
         <Route path="/modules/:moduleId" element={<ModulePage />} />
-        <Route path="/learn" element={<LearnPage />} />
-        <Route path="/guided-build/:stepNumber" element={<GuidedBuildPage />} />
+        <Route path="/modules/:moduleId/learn" element={<LearnPage />} />
+        <Route path="/modules/:moduleId/:stageSlug/:stepNumber" element={<GuidedSequencePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/review" element={<ReviewPage />} />
         {/* Splat, not :questionId — question ids are namespaced like "linked-list/append"

@@ -14,6 +14,16 @@ import { step1Append } from './modules/linked-list/questions/guidedBuild/step1Ap
 import { step2Prepend } from './modules/linked-list/questions/guidedBuild/step2Prepend';
 import { step3Delete } from './modules/linked-list/questions/guidedBuild/step3Delete';
 import { step4Search } from './modules/linked-list/questions/guidedBuild/step4Search';
+import { step1FrequencyCount } from './modules/arrays-hashing/questions/guidedApply/step1FrequencyCount';
+import { step2HashSetMembership } from './modules/arrays-hashing/questions/guidedApply/step2HashSetMembership';
+import { step3AnagramGrouping } from './modules/arrays-hashing/questions/guidedApply/step3AnagramGrouping';
+import { step4TwoSumPattern } from './modules/arrays-hashing/questions/guidedApply/step4TwoSumPattern';
+import { step5PrefixProducts } from './modules/arrays-hashing/questions/guidedApply/step5PrefixProducts';
+import { firstUniqueCharacter } from './modules/arrays-hashing/questions/drills/firstUniqueCharacter';
+import { longestConsecutiveSequence } from './modules/arrays-hashing/questions/drills/longestConsecutiveSequence';
+import { groupAnagrams } from './modules/arrays-hashing/questions/drills/groupAnagrams';
+import { twoSum } from './modules/arrays-hashing/questions/drills/twoSum';
+import { productExceptSelf } from './modules/arrays-hashing/questions/drills/productExceptSelf';
 import { roadmapModules } from './roadmap';
 
 export const questions: CodeQuestion[] = [
@@ -32,6 +42,16 @@ export const questions: CodeQuestion[] = [
   step2Prepend,
   step3Delete,
   step4Search,
+  step1FrequencyCount,
+  step2HashSetMembership,
+  step3AnagramGrouping,
+  step4TwoSumPattern,
+  step5PrefixProducts,
+  firstUniqueCharacter,
+  longestConsecutiveSequence,
+  groupAnagrams,
+  twoSum,
+  productExceptSelf,
 ];
 
 export const questionsById: ReadonlyMap<QuestionId, CodeQuestion> = new Map(
