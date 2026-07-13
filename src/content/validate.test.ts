@@ -46,6 +46,39 @@ describe('validateQuestion', () => {
     expect(validateQuestion(question).some((e) => e.includes('entryPoint'))).toBe(true);
   });
 
+  it('flags a visualization binding on a function-mode question', () => {
+    const question = baseQuestion({
+      visualization: { kind: 'linked_list', demoScript: [{ op: 'append', args: [1] }] },
+    });
+    expect(validateQuestion(question).some((e) => e.includes("visualization binding requires spec.mode 'class'"))).toBe(
+      true,
+    );
+  });
+
+  it('accepts a visualization binding on a class-mode question', () => {
+    const question = baseQuestion({
+      spec: {
+        mode: 'class',
+        entryPoint: 'Thing',
+        tests: [{ id: 't1', group: 'visible', comparator: 'deep', script: [{ op: 'append', args: [1] }] }],
+      },
+      visualization: { kind: 'linked_list', demoScript: [{ op: 'append', args: [1] }] },
+    });
+    expect(validateQuestion(question)).toEqual([]);
+  });
+
+  it('flags an empty demoScript on a visualization binding', () => {
+    const question = baseQuestion({
+      spec: {
+        mode: 'class',
+        entryPoint: 'Thing',
+        tests: [{ id: 't1', group: 'visible', comparator: 'deep', script: [{ op: 'append', args: [1] }] }],
+      },
+      visualization: { kind: 'linked_list', demoScript: [] },
+    });
+    expect(validateQuestion(question).some((e) => e.includes('demoScript must not be empty'))).toBe(true);
+  });
+
   it('flags an empty tests array', () => {
     const question = baseQuestion({ spec: { ...baseQuestion().spec, tests: [] } });
     expect(validateQuestion(question).some((e) => e.includes('tests must not be empty'))).toBe(true);

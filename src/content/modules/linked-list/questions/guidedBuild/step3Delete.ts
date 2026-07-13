@@ -100,6 +100,15 @@ class LinkedList:
     'if self.head is None: return. If self.head.val == value: self.head = self.head.next; return. Otherwise walk with `cur` while cur.next is not None and cur.next.val != value, then splice past cur.next if it matched.',
     'def delete(self, value): if self.head is None: return; if self.head.val == value: self.head = self.head.next; return; cur = self.head; while cur.next is not None and cur.next.val != value: cur = cur.next; if cur.next is not None: cur.next = cur.next.next.',
   ],
+  visualization: {
+    kind: 'linked_list',
+    demoScript: [
+      { op: 'append', args: [1] },
+      { op: 'append', args: [2] },
+      { op: 'append', args: [3] },
+      { op: 'delete', args: [2] },
+    ],
+  },
   spec: {
     mode: 'class',
     entryPoint: 'LinkedList',

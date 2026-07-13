@@ -1,12 +1,12 @@
-import type { Json, OpStep, TestGroup } from '../../content/types';
+import type { Json, OpStep, TestGroup, VizFrame } from '../../content/types';
 
-// Fraction/TestFailure/Scorecard live in content/types.ts, not here: Attempt
-// (storage/types.ts) needs to store a Scorecard, and storage/ sits below
-// engine/ in the layer order, so it can't import from engine/. Since those
-// three types only reference other content/types.ts data (no engine-runner
+// Fraction/TestFailure/Scorecard/VizFrame live in content/types.ts, not here:
+// Attempt (storage/types.ts) needs to store a Scorecard, and storage/ sits
+// below engine/ in the layer order, so it can't import from engine/. Since
+// those types only reference other content/types.ts data (no engine-runner
 // specifics), they're defined there and re-exported here so every existing
 // import site (grade.ts, ui/) keeps working unchanged.
-export type { Fraction, TestFailure, Scorecard } from '../../content/types';
+export type { Fraction, TestFailure, Scorecard, VizFrame } from '../../content/types';
 
 export interface TestCaseReportEntry {
   id: string;
@@ -28,9 +28,15 @@ export interface TestCaseReportEntry {
   failedStepIndex?: number;
 }
 
-/** What the UI sees on RunResult.report — only present when status is 'ok'. */
+/**
+ * What the UI sees on RunResult.report — only present when status is 'ok'.
+ * `frames` is populated only by a trace harness (engine/grading/trace.ts);
+ * a grading harness always leaves it undefined, and vice versa `results` is
+ * always empty for a trace run.
+ */
 export interface TestReport {
   results: TestCaseReportEntry[];
+  frames?: VizFrame[];
 }
 
 /**
@@ -42,4 +48,5 @@ export interface HarnessReport {
   status: 'ok' | 'syntax_error' | 'runtime_error';
   message: string | null;
   results: TestCaseReportEntry[];
+  frames?: VizFrame[];
 }

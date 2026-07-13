@@ -89,7 +89,7 @@ async function handleMessage(message: WorkerRequest): Promise<void> {
           status: 'ok',
           stdout: cleanStdout,
           stderr: stderrChunks.join('\n'),
-          report: { results: harnessReport.results },
+          report: { results: harnessReport.results, frames: harnessReport.frames },
           durationMs,
         });
       } else {

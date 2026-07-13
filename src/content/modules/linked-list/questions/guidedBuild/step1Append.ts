@@ -72,6 +72,14 @@ class LinkedList:
     'Otherwise, walk with a `cur` pointer starting at self.head until `cur.next is None`, then attach the new node there.',
     'node = Node(value); if self.head is None: self.head = node; return. Otherwise cur = self.head; while cur.next is not None: cur = cur.next; then cur.next = node.',
   ],
+  visualization: {
+    kind: 'linked_list',
+    demoScript: [
+      { op: 'append', args: [1] },
+      { op: 'append', args: [2] },
+      { op: 'append', args: [3] },
+    ],
+  },
   spec: {
     mode: 'class',
     entryPoint: 'LinkedList',

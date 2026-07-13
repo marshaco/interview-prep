@@ -30,6 +30,11 @@ export function QuestionPlayerPage() {
           ← Back to module
         </Link>
       }
+      headerRight={
+        <Link to={`/interview/${question.id}`} className="text-xs uppercase tracking-wide text-text-muted hover:text-accent">
+          Interview Mode →
+        </Link>
+      }
     />
   );
 }

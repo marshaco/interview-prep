@@ -56,6 +56,30 @@ export interface HarnessSpec {
   tests: TestCase[];
 }
 
+/**
+ * One snapshot of a class-mode structure's observable state, taken after a
+ * scripted operation runs (ARCHITECTURE §9). Post-hoc replay data, not a
+ * live debugger — the harness produces the whole sequence in one run.
+ */
+export interface VizFrame {
+  step: number;
+  label: string;
+  state: Json;
+}
+
+/**
+ * `kind` doubles as the renderer selector in ui/components/viz/ — new
+ * structure kinds (tree, heap, graph) add a new `kind` value and a new
+ * renderer, never touching the frame protocol itself or existing renderers.
+ * `linked_list` assumes the class-under-test exposes `.head` and each node
+ * exposes `.val`/`.next`, the convention every linked-list question in this
+ * module already follows.
+ */
+export interface VisualizationBinding {
+  kind: 'linked_list';
+  demoScript: OpStep[];
+}
+
 export interface CodeQuestion {
   id: QuestionId;
   kind: 'method_impl' | 'full_impl' | 'algorithm_problem' | 'debugging';
@@ -67,6 +91,7 @@ export interface CodeQuestion {
   solution: string; // canonical solution, also run through its own harness in CI
   hints: [string, string, string, string]; // nudge -> concept -> pseudocode -> near-solution
   spec: HarnessSpec;
+  visualization?: VisualizationBinding; // optional (§9), class-mode only
 }
 
 // Grading result shapes. Defined here (not in engine/grading/types.ts, which

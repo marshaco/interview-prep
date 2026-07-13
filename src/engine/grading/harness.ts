@@ -13,7 +13,7 @@ import {
  * the browser/worker (harness is built on the main thread) and Node
  * (harness.test.ts / canonicalSolutions.test.ts run under Vitest).
  */
-function toBase64Json(value: unknown): string {
+export function toBase64Json(value: unknown): string {
   const json = JSON.stringify(value);
   const bytes = new TextEncoder().encode(json);
   let binary = '';
@@ -23,7 +23,13 @@ function toBase64Json(value: unknown): string {
   return btoa(binary);
 }
 
-const SHARED_PRELUDE = `import base64, json, math, random, sys, textwrap
+/**
+ * Exported for reuse by trace.ts: the trace harness needs the same
+ * `__user_code__` exec/error-handling scaffolding and duck-typed node
+ * helpers, just a different execution section (script + snapshot instead of
+ * script + comparator).
+ */
+export const SHARED_PRELUDE = `import base64, json, math, random, sys, textwrap
 
 random.seed(0)
 sys.setrecursionlimit(3000)

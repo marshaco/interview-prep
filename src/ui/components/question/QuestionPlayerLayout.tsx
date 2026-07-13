@@ -5,6 +5,7 @@ import { MonacoEditor } from '../editor/MonacoEditor';
 import { PromptPane } from './PromptPane';
 import { HintsLadder } from './HintsLadder';
 import { Scorecard } from './Scorecard';
+import { VisualizationPanel } from './VisualizationPanel';
 
 interface QuestionPlayerLayoutProps {
   question: CodeQuestion;
@@ -13,9 +14,18 @@ interface QuestionPlayerLayoutProps {
   headerRight?: ReactNode;
   /** Rendered below the scorecard — e.g. a Guided Build "Next step" button. */
   footer?: ReactNode;
+  /** Chrome-stripped presentation for Interview Mode: no hints, no Run, no visualization. */
+  interviewMode?: boolean;
 }
 
-export function QuestionPlayerLayout({ question, player, headerLeft, headerRight, footer }: QuestionPlayerLayoutProps) {
+export function QuestionPlayerLayout({
+  question,
+  player,
+  headerLeft,
+  headerRight,
+  footer,
+  interviewMode = false,
+}: QuestionPlayerLayoutProps) {
   return (
     <div className="flex h-screen flex-col bg-bg text-text">
       <header className="flex items-center justify-between border-b border-border px-4 py-2">
@@ -26,20 +36,24 @@ export function QuestionPlayerLayout({ question, player, headerLeft, headerRight
       <div className="flex min-h-0 flex-1">
         <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-border p-4">
           <PromptPane question={question} />
-          <div className="mt-6">
-            <HintsLadder hints={question.hints} revealedCount={player.hintsRevealed} onReveal={player.revealHint} />
-          </div>
+          {!interviewMode && (
+            <div className="mt-6">
+              <HintsLadder hints={question.hints} revealedCount={player.hintsRevealed} onReveal={player.revealHint} />
+            </div>
+          )}
         </aside>
         <main className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-center gap-2 border-b border-border px-4 py-2">
-            <button
-              type="button"
-              onClick={() => void player.run()}
-              disabled={player.isRunning}
-              className="rounded border border-border bg-bg-raised px-3 py-1.5 text-sm text-text hover:border-accent disabled:opacity-50"
-            >
-              Run
-            </button>
+            {!interviewMode && (
+              <button
+                type="button"
+                onClick={() => void player.run()}
+                disabled={player.isRunning}
+                className="rounded border border-border bg-bg-raised px-3 py-1.5 text-sm text-text hover:border-accent disabled:opacity-50"
+              >
+                Run
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void player.submit()}
@@ -71,6 +85,11 @@ export function QuestionPlayerLayout({ question, player, headerLeft, headerRight
               <Scorecard result={player.playerResult.result} scorecard={player.playerResult.scorecard} />
             ) : (
               <p className="text-sm text-text-muted">Run or Submit to see results.</p>
+            )}
+            {!interviewMode && question.visualization && player.playerResult?.scorecard !== undefined && (
+              <div className="mt-4">
+                <VisualizationPanel question={question} code={player.code} />
+              </div>
             )}
             {footer}
           </div>

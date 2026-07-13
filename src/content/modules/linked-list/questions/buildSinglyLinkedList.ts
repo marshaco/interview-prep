@@ -117,6 +117,16 @@ class LinkedList:
     'This is exactly the method-drill logic you already practiced (append/prepend/delete/search), just storing the head on self instead of passing/returning it. to_list is the same walk as the harness’s own list-dumping helper.',
     'append/prepend/delete/search all walk with a `cur` pointer starting at self.head, handling the empty-list and head-match cases before falling through to the general walk-and-splice/compare logic; to_list collects cur.val while cur is not None.',
   ],
+  visualization: {
+    kind: 'linked_list',
+    demoScript: [
+      { op: 'append', args: [1] },
+      { op: 'append', args: [2] },
+      { op: 'append', args: [3] },
+      { op: 'prepend', args: [0] },
+      { op: 'delete', args: [2] },
+    ],
+  },
   spec: {
     mode: 'class',
     entryPoint: 'LinkedList',

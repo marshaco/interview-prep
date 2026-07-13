@@ -19,6 +19,13 @@ export function validateQuestion(question: CodeQuestion): string[] {
   if (!spec.entryPoint) {
     errors.push(`${prefix}: spec.entryPoint must be non-empty`);
   }
+
+  if (question.visualization && spec.mode !== 'class') {
+    errors.push(`${prefix}: visualization binding requires spec.mode 'class' (the trace harness snapshots an instance)`);
+  }
+  if (question.visualization && question.visualization.demoScript.length === 0) {
+    errors.push(`${prefix}: visualization.demoScript must not be empty`);
+  }
   if (spec.tests.length === 0) {
     errors.push(`${prefix}: spec.tests must not be empty`);
   }

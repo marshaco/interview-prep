@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { RoadmapPage } from './ui/routes/RoadmapPage';
 import { ModulePage } from './ui/routes/ModulePage';
 import { QuestionPlayerPage } from './ui/routes/QuestionPlayerPage';
+import { InterviewQuestionPage } from './ui/routes/InterviewQuestionPage';
 import { LearnPage } from './ui/routes/LearnPage';
 import { GuidedSequencePage } from './ui/routes/GuidedSequencePage';
 import { DashboardPage } from './ui/routes/DashboardPage';
@@ -26,6 +27,7 @@ function App() {
         {/* Splat, not :questionId — question ids are namespaced like "linked-list/append"
             and contain a literal slash, which a single dynamic segment can't match. */}
         <Route path="/questions/*" element={<QuestionPlayerPage />} />
+        <Route path="/interview/*" element={<InterviewQuestionPage />} />
       </Routes>
     </BrowserRouter>
   );

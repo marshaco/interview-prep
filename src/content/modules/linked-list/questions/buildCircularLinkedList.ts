@@ -91,6 +91,15 @@ class CircularLinkedList:
     'to_list(limit) doesn\'t need to know the list\'s real length — just take exactly `limit` steps and stop, regardless of whether you\'ve wrapped around. length() needs to walk until it gets back to the starting node, not until .next is None.',
     'append: if head is None, the new node points to itself and becomes head; otherwise walk from head while `tail.next is not self.head` to find the real last node, then splice the new node in and point it back to head. to_list: start at head, append cur.val and advance exactly `limit` times. length: count = 1, walk from head.next while `cur is not self.head`, incrementing count each step.',
   ],
+  visualization: {
+    kind: 'linked_list',
+    demoScript: [
+      { op: 'append', args: [1] },
+      { op: 'append', args: [2] },
+      { op: 'append', args: [3] },
+      { op: 'append', args: [4] },
+    ],
+  },
   spec: {
     mode: 'class',
     entryPoint: 'CircularLinkedList',

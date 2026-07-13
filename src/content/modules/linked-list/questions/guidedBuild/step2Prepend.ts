@@ -82,6 +82,14 @@ class LinkedList:
     'node = Node(value); node.next = self.head; then self.head = node.',
     'def prepend(self, value): node = Node(value); node.next = self.head; self.head = node.',
   ],
+  visualization: {
+    kind: 'linked_list',
+    demoScript: [
+      { op: 'append', args: [1] },
+      { op: 'append', args: [2] },
+      { op: 'prepend', args: [0] },
+    ],
+  },
   spec: {
     mode: 'class',
     entryPoint: 'LinkedList',

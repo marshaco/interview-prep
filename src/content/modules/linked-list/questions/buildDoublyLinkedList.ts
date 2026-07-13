@@ -123,6 +123,16 @@ class DoublyLinkedList:
     'For delete: if cur.prev exists, cur.prev.next = cur.next, else self.head = cur.next (deleting head). Symmetrically, if cur.next exists, cur.next.prev = cur.prev, else self.tail = cur.prev (deleting tail). Both checks are independent — a single-node list needs both branches to fire.',
     'append: if tail is None, head=tail=new node; else link new node after tail and move tail. prepend is the mirror image using head. delete: walk to the matching node, then apply the four-pointer patch above. to_list_forward walks from head via .next; to_list_backward walks from tail via .prev.',
   ],
+  visualization: {
+    kind: 'linked_list',
+    demoScript: [
+      { op: 'append', args: [1] },
+      { op: 'append', args: [2] },
+      { op: 'append', args: [3] },
+      { op: 'prepend', args: [0] },
+      { op: 'delete', args: [2] },
+    ],
+  },
   spec: {
     mode: 'class',
     entryPoint: 'DoublyLinkedList',
