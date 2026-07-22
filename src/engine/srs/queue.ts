@@ -16,24 +16,39 @@ function daysBetween(fromIso: string, toIso: string): number {
  * (mastery asc, overdue-days desc), capped at a daily size. There's no
  * Settings UI yet to make the cap user-configurable, so it's a parameter
  * with a sane default rather than a stored preference.
+ *
+ * A skill with no ReviewRecord yet hasn't been attempted at all — it isn't
+ * "due" in the SRS sense, but a queue that's empty until the user has
+ * already reviewed something is backwards for a practice tool. Real overdue
+ * reviews always come first (they carry genuine SRS urgency); unattempted
+ * skills only pad the remaining slots up to `cap`, in `allSkillIds` order,
+ * so the queue is never empty as long as there's content to practice.
  */
 export function buildTodaysReview(
   reviewRecords: ReviewRecord[],
   masteryBySkill: ReadonlyMap<SkillId, SkillMastery>,
   todayIso: string,
+  allSkillIds: SkillId[] = [],
   cap = 10,
 ): DueReviewItem[] {
   const due = reviewRecords.filter((record) => record.dueAt <= todayIso);
 
-  const items: DueReviewItem[] = due.map((record) => ({
+  const overdueItems: DueReviewItem[] = due.map((record) => ({
     skillId: record.skillId,
     overdueDays: Math.max(0, daysBetween(record.dueAt, todayIso)),
     masteryScore: masteryBySkill.get(record.skillId)?.score ?? 0,
   }));
 
-  items.sort((a, b) => a.masteryScore - b.masteryScore || b.overdueDays - a.overdueDays);
+  overdueItems.sort((a, b) => a.masteryScore - b.masteryScore || b.overdueDays - a.overdueDays);
 
-  return items.slice(0, cap);
+  if (overdueItems.length >= cap) return overdueItems.slice(0, cap);
+
+  const reviewedSkillIds = new Set(reviewRecords.map((record) => record.skillId));
+  const freshItems: DueReviewItem[] = allSkillIds
+    .filter((skillId) => !reviewedSkillIds.has(skillId))
+    .map((skillId) => ({ skillId, overdueDays: 0, masteryScore: 0 }));
+
+  return [...overdueItems, ...freshItems].slice(0, cap);
 }
 
 /**

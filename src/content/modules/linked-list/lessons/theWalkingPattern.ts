@@ -3,6 +3,11 @@ import type { LessonSection } from '../../../types';
 export const theWalkingPattern: LessonSection = {
   id: 'linked-list/lesson/the-walking-pattern',
   title: 'The walking pattern',
+  diagram: {
+    nodes: [{ value: 1 }, { value: 2, label: 'prev' }, { value: 3, label: 'node', highlight: true }, { value: 4 }],
+    connected: true,
+    caption: "reverse's two pointers mid-walk: prev trails node by one step so .next can be rewired backward.",
+  },
   body: `## The walking pattern
 
 Almost every linked list method — the ones in the next three stages

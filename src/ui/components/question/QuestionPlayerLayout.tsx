@@ -12,6 +12,8 @@ interface QuestionPlayerLayoutProps {
   player: ReturnType<typeof useQuestionPlayer>;
   headerLeft: ReactNode;
   headerRight?: ReactNode;
+  /** Rendered as a thin strip below the header, above the editor — e.g. Review's progress bar. */
+  subHeader?: ReactNode;
   /** Rendered below the scorecard — e.g. a Guided Build "Next step" button. */
   footer?: ReactNode;
   /** Chrome-stripped presentation for Interview Mode: no hints, no Run, no visualization. */
@@ -23,6 +25,7 @@ export function QuestionPlayerLayout({
   player,
   headerLeft,
   headerRight,
+  subHeader,
   footer,
   interviewMode = false,
 }: QuestionPlayerLayoutProps) {
@@ -33,6 +36,7 @@ export function QuestionPlayerLayout({
         <h1 className="text-sm font-semibold">{question.title}</h1>
         {headerRight ?? <span />}
       </header>
+      {subHeader}
       <div className="flex min-h-0 flex-1">
         <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-border p-4">
           <PromptPane question={question} />

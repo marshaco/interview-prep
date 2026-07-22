@@ -1,4 +1,4 @@
-import type { CodeQuestion, ModuleId, QuestionId, RoadmapModule } from './types';
+import type { CodeQuestion, ModuleId, QuestionId, RoadmapModule, SkillId } from './types';
 import { append } from './modules/linked-list/questions/append';
 import { prepend } from './modules/linked-list/questions/prepend';
 import { deleteValue } from './modules/linked-list/questions/deleteValue';
@@ -35,6 +35,14 @@ import { validParentheses } from './modules/stack/questions/drills/validParenthe
 import { dailyTemperatures } from './modules/stack/questions/drills/dailyTemperatures';
 import { nextGreaterElement } from './modules/stack/questions/drills/nextGreaterElement';
 import { evaluateRpn } from './modules/stack/questions/drills/evaluateRpn';
+import { step1ConvergingPointers } from './modules/two-pointers/questions/guidedApply/step1ConvergingPointers';
+import { step2PairSumSorted } from './modules/two-pointers/questions/guidedApply/step2PairSumSorted';
+import { step3Partition } from './modules/two-pointers/questions/guidedApply/step3Partition';
+import { step4PalindromeCheck } from './modules/two-pointers/questions/guidedApply/step4PalindromeCheck';
+import { containerWithMostWater } from './modules/two-pointers/questions/drills/containerWithMostWater';
+import { threeSum } from './modules/two-pointers/questions/drills/threeSum';
+import { sortColors } from './modules/two-pointers/questions/drills/sortColors';
+import { validPalindrome } from './modules/two-pointers/questions/drills/validPalindrome';
 import { roadmapModules } from './roadmap';
 
 export const questions: CodeQuestion[] = [
@@ -74,6 +82,14 @@ export const questions: CodeQuestion[] = [
   dailyTemperatures,
   nextGreaterElement,
   evaluateRpn,
+  step1ConvergingPointers,
+  step2PairSumSorted,
+  step3Partition,
+  step4PalindromeCheck,
+  containerWithMostWater,
+  threeSum,
+  sortColors,
+  validPalindrome,
 ];
 
 export const questionsById: ReadonlyMap<QuestionId, CodeQuestion> = new Map(
@@ -83,6 +99,13 @@ export const questionsById: ReadonlyMap<QuestionId, CodeQuestion> = new Map(
 export function getQuestion(id: QuestionId): CodeQuestion | undefined {
   return questionsById.get(id);
 }
+
+/**
+ * Every skill exercised by at least one shipped question, in question-array
+ * order. Used to pad Today's Review with unattempted skills (engine/srs/queue.ts)
+ * so the queue is never empty just because nothing's been reviewed yet.
+ */
+export const allSkillIds: SkillId[] = [...new Set(questions.flatMap((question) => question.skillIds))];
 
 export const modules: RoadmapModule[] = roadmapModules;
 

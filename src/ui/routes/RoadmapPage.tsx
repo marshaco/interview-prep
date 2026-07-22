@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ReactFlow, Background, Controls, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { modules } from '../../content/registry';
@@ -8,14 +7,48 @@ import { storageAdapter } from '../storageAdapter';
 import { RoadmapNode, type RoadmapNodeType } from '../components/roadmap/RoadmapNode';
 import { computeRoadmapPositions } from '../components/roadmap/roadmapLayout';
 import { AppNav } from '../components/common/AppNav';
-import type { SkillId } from '../../content/types';
+import { ModuleDetails } from '../components/module/ModuleDetails';
+import type { ModuleId, SkillId } from '../../content/types';
 import type { SkillMastery } from '../../storage/types';
 
 const nodeTypes = { roadmapModule: RoadmapNode };
 
+type Category = 'data_structure' | 'algorithm';
+
+const CATEGORY_TABS: { kind: Category; label: string; accentClass: string; activeClass: string }[] = [
+  {
+    kind: 'data_structure',
+    label: 'Data Structures',
+    accentClass: 'text-accent',
+    activeClass: 'border-accent bg-accent-muted text-text',
+  },
+  {
+    kind: 'algorithm',
+    label: 'Algorithms',
+    accentClass: 'text-accent-secondary',
+    activeClass: 'border-accent-secondary bg-accent-secondary-muted text-text',
+  },
+];
+
 export function RoadmapPage() {
-  const navigate = useNavigate();
   const [masteryBySkill, setMasteryBySkill] = useState<ReadonlyMap<SkillId, SkillMastery>>(new Map());
+  const [activeCategory, setActiveCategory] = useState<Category>('data_structure');
+  const [selectedModuleId, setSelectedModuleId] = useState<ModuleId | null>(null);
+  const [renderedModuleId, setRenderedModuleId] = useState<ModuleId | null>(null);
+
+  // Adjust derived state during render (not an effect) — see
+  // useQuestionPlayer's question-change reset for the same pattern. Keeping
+  // the last-open module rendered while the panel is sliding shut avoids a
+  // blank-panel flash; switching category closes whatever's open, since it
+  // belongs to the graph that's about to disappear.
+  if (selectedModuleId !== null && selectedModuleId !== renderedModuleId) {
+    setRenderedModuleId(selectedModuleId);
+  }
+  const [categoryForReset, setCategoryForReset] = useState(activeCategory);
+  if (activeCategory !== categoryForReset) {
+    setCategoryForReset(activeCategory);
+    setSelectedModuleId(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -28,11 +61,21 @@ export function RoadmapPage() {
     };
   }, []);
 
-  const positions = useMemo(() => computeRoadmapPositions(modules), []);
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setSelectedModuleId(null);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const categoryModules = useMemo(() => modules.filter((m) => m.kind === activeCategory), [activeCategory]);
+
+  const positions = useMemo(() => computeRoadmapPositions(categoryModules), [categoryModules]);
 
   const nodes: RoadmapNodeType[] = useMemo(
     () =>
-      modules.map((module) => {
+      categoryModules.map((module) => {
         const isGhost = module.stages.every((stage) => stage.items.length === 0);
         return {
           id: module.id,
@@ -43,40 +86,54 @@ export function RoadmapPage() {
             category: module.kind === 'data_structure' ? 'Data Structures' : 'Algorithms',
             isGhost,
             progress: moduleProgress(module.skills, masteryBySkill),
-            onActivate: () => void navigate(`/modules/${module.id}`),
+            onActivate: () => setSelectedModuleId(module.id),
           },
         };
       }),
-    [positions, masteryBySkill, navigate],
+    [categoryModules, positions, masteryBySkill],
   );
 
   const edges: Edge[] = useMemo(
     () =>
-      modules.flatMap((module) =>
-        module.prerequisites.map((prereqId) => ({
-          id: `${prereqId}->${module.id}`,
-          source: prereqId,
-          target: module.id,
-        })),
+      categoryModules.flatMap((module) =>
+        module.prerequisites
+          .filter((prereqId) => categoryModules.some((m) => m.id === prereqId))
+          .map((prereqId) => ({
+            id: `${prereqId}->${module.id}`,
+            source: prereqId,
+            target: module.id,
+          })),
       ),
-    [],
+    [categoryModules],
   );
 
   return (
     <div className="flex h-screen flex-col bg-bg text-text">
       <AppNav />
       <header className="border-b border-border px-4 py-3">
-        <h1 className="text-lg font-semibold">Interview Prep Roadmap</h1>
-        <p className="text-sm text-text-muted">
-          <span className="text-accent">■</span> Data Structures &nbsp;
-          <span className="text-accent-secondary">■</span> Algorithms
-        </p>
+        <h1 className="mb-3 text-lg font-semibold">Interview Prep Roadmap</h1>
+        <div className="flex gap-2">
+          {CATEGORY_TABS.map((tab) => (
+            <button
+              key={tab.kind}
+              type="button"
+              onClick={() => setActiveCategory(tab.kind)}
+              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-200 ease-out-motion focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                activeCategory === tab.kind ? tab.activeClass : 'border-border text-text-muted hover:text-text'
+              }`}
+            >
+              <span className={activeCategory === tab.kind ? '' : tab.accentClass}>■</span> {tab.label}
+            </button>
+          ))}
+        </div>
       </header>
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         <ReactFlow
+          key={activeCategory}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          onPaneClick={() => setSelectedModuleId(null)}
           fitView
           nodesDraggable={false}
           nodesConnectable={false}
@@ -86,6 +143,25 @@ export function RoadmapPage() {
           <Background />
           <Controls showInteractive={false} />
         </ReactFlow>
+
+        <div
+          className={`absolute inset-y-0 right-0 z-10 w-full max-w-[420px] transform overflow-y-auto border-l border-border bg-bg-raised shadow-xl transition-transform duration-200 ease-out-motion ${
+            selectedModuleId ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <span className="text-xs uppercase tracking-wide text-text-muted">Module</span>
+            <button
+              type="button"
+              onClick={() => setSelectedModuleId(null)}
+              aria-label="Close module panel"
+              className="rounded p-1 text-text-muted transition-colors duration-200 ease-out-motion hover:bg-bg-hover hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-5">{renderedModuleId && <ModuleDetails moduleId={renderedModuleId} />}</div>
+        </div>
       </div>
     </div>
   );

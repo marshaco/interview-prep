@@ -3,6 +3,15 @@ import type { LessonSection } from '../../../types';
 export const whatIsALinkedList: LessonSection = {
   id: 'linked-list/lesson/what-is-a-linked-list',
   title: 'What is a linked list?',
+  diagram: {
+    nodes: [
+      { value: 1, label: 'head', highlight: true },
+      { value: 2 },
+      { value: 3 },
+    ],
+    connected: true,
+    caption: 'A singly linked list: each node points to the next; head is the only entry point into the chain.',
+  },
   body: `## What is a linked list?
 
 An array stores its elements in one contiguous block of memory — that's

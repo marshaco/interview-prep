@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { getModule } from '../../content/registry';
 import { MarkdownContent } from '../components/common/MarkdownContent';
+import { StaticSequenceDiagram } from '../components/viz/StaticSequenceDiagram';
 import { EmptyState } from '../components/common/EmptyState';
 
 export function LearnPage() {
@@ -24,8 +25,10 @@ export function LearnPage() {
     ? `/modules/${module.id}/${nextStage.type === 'guided_build' ? 'guided-build' : 'guided-apply'}/1`
     : `/modules/${module.id}`;
 
+  const lessons = learnStage.items.filter((item) => item.type === 'lesson');
+
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-3xl px-6 py-10">
       <Link
         to={`/modules/${module.id}`}
         className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
@@ -33,11 +36,33 @@ export function LearnPage() {
         ← Back to module
       </Link>
       <h1 className="mb-1 mt-4 text-xl font-semibold text-text">{module.title}: Learn</h1>
-      <p className="mb-8 text-sm text-text-muted">{module.summary}</p>
+      <p className="mb-6 text-sm text-text-muted">{module.summary}</p>
+
+      {lessons.length > 1 && (
+        <nav aria-label="Lessons in this stage" className="mb-8 rounded border border-border bg-bg-raised p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">On this page</p>
+          <ol className="ml-5 list-decimal text-sm text-text-muted">
+            {lessons.map((item) =>
+              item.type === 'lesson' ? (
+                <li key={item.lesson.id} className="mb-1">
+                  <a href={`#${item.lesson.id}`} className="hover:text-accent">
+                    {item.lesson.title}
+                  </a>
+                </li>
+              ) : null,
+            )}
+          </ol>
+        </nav>
+      )}
+
       <div className="flex flex-col gap-8">
-        {learnStage.items.map((item) =>
+        {lessons.map((item, index) =>
           item.type === 'lesson' ? (
-            <article key={item.lesson.id} className="rounded border border-border bg-bg-raised p-5">
+            <article key={item.lesson.id} id={item.lesson.id} className="scroll-mt-6 rounded-lg border border-border bg-bg-raised p-6">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-accent">
+                Lesson {index + 1} of {lessons.length}
+              </p>
+              {item.lesson.diagram && <StaticSequenceDiagram {...item.lesson.diagram} />}
               <MarkdownContent>{item.lesson.body}</MarkdownContent>
             </article>
           ) : null,

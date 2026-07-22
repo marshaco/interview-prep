@@ -3,6 +3,15 @@ import type { LessonSection } from '../../../types';
 export const twoWaysToBuildAStack: LessonSection = {
   id: 'stack/lesson/two-ways-to-build-a-stack',
   title: 'Two ways to build a stack',
+  diagram: {
+    nodes: [
+      { value: 3, label: 'top', highlight: true },
+      { value: 2 },
+      { value: 1 },
+    ],
+    connected: true,
+    caption: 'Linked-list-backed: the most recently pushed value (3) sits at top, pointing back toward the rest.',
+  },
   body: `## Two ways to build a stack
 
 A stack is a *behavior contract* (push/pop/peek, LIFO order), not a

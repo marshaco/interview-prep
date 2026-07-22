@@ -143,10 +143,32 @@ export type StageType =
   | 'algorithm_drills' // algorithm only
   | 'interview_mode'; // both kinds
 
+/** One box in a static illustrative diagram — a lesson aid, not user data. */
+export interface SequenceDiagramNode {
+  value: string | number;
+  label?: string; // small caption under the box, e.g. "head", "left", "top"
+  highlight?: boolean;
+}
+
+/**
+ * A static, hand-authored illustration for a Learn-stage lesson — boxes
+ * optionally linked by arrows (a linked list / stack), optionally circular
+ * (a circular linked list), with optional pointer labels (two pointers).
+ * Unlike VizFrame (§9), this never depends on user code — it's fixed
+ * content, rendered once, the same for every learner.
+ */
+export interface SequenceDiagramSpec {
+  nodes: SequenceDiagramNode[];
+  connected?: boolean; // draw arrows between consecutive boxes
+  circular?: boolean; // loop the last box's arrow back to the first
+  caption?: string;
+}
+
 export interface LessonSection {
   id: string;
   title: string;
   body: string; // markdown
+  diagram?: SequenceDiagramSpec;
 }
 
 export type StageItem = { type: 'lesson'; lesson: LessonSection } | { type: 'question'; questionId: QuestionId };

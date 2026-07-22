@@ -3,6 +3,15 @@ import type { LessonSection } from '../../../types';
 export const theMonotonicStackPattern: LessonSection = {
   id: 'stack/lesson/the-monotonic-stack-pattern',
   title: 'The monotonic stack pattern',
+  diagram: {
+    nodes: [
+      { value: 9 },
+      { value: 5 },
+      { value: 3, label: 'top', highlight: true },
+    ],
+    connected: false,
+    caption: 'A decreasing monotonic stack mid-scan — each value is smaller than the one below it.',
+  },
   body: `## The monotonic stack pattern
 
 A **monotonic stack** keeps its elements in strictly increasing (or

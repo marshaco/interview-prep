@@ -2,6 +2,7 @@ import type { RoadmapModule, Skill, Stage } from './types';
 import { linkedListModule } from './modules/linked-list/module';
 import { arraysHashingModule } from './modules/arrays-hashing/module';
 import { stackModule } from './modules/stack/module';
+import { twoPointersModule } from './modules/two-pointers/module';
 
 /**
  * The remaining modules that don't have real content yet — stage skeletons
@@ -86,19 +87,6 @@ const graphs: RoadmapModule = {
   stages: dataStructureStages(),
 };
 
-const twoPointers: RoadmapModule = {
-  id: 'two-pointers',
-  kind: 'algorithm',
-  title: 'Two Pointers',
-  summary: 'Converging pointers, partitioning, and pair-sum on sorted input.',
-  prerequisites: ['arrays-hashing'],
-  skills: skills('two-pointers', 'algorithm_application', [
-    'converging pointers',
-    'partition',
-    'pair-sum on sorted input',
-  ]),
-  stages: algorithmStages(),
-};
 
 const binarySearch: RoadmapModule = {
   id: 'binary-search',
@@ -232,7 +220,7 @@ export const roadmapModules: RoadmapModule[] = [
   graphs,
   // Algorithms
   arraysHashingModule,
-  twoPointers,
+  twoPointersModule,
   binarySearch,
   slidingWindow,
   backtracking,

@@ -1,12 +1,28 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-bg: #0b0d12;
-  --color-bg-raised: #12151c;
-  --color-bg-inset: #06070a;
-  --color-border: #23262f;
-  --color-text: #e6e8ec;
-  --color-text-muted: #8b909c;
+  /* --- Surfaces: the app canvas, one step up for cards/panels, one more
+     step up for the rare "raised" treatment (hero CTA, active editor pane).
+     Each step is a meaningfully different lightness — not a hairline border
+     doing the work of separation. --- */
+  --color-bg: #0a0c10; /* the app canvas — every shell sits on this */
+  --color-bg-raised: #1c212c; /* cards, panels — the default surface */
+  --color-bg-elevated: #242a38; /* one step above raised: hero CTA, active pane */
+  --color-bg-hover: #2c3341; /* interactive hover feedback — transient, not structural */
+  --color-bg-inset: #050609; /* recessed surfaces: code blocks, nav bar, Monaco pane */
+  --color-border: #2e3440; /* resting border */
+  --color-border-strong: #454d5e; /* hover/focus only — never a resting state */
+
+  /* --- Text: exactly three levels. Primary for headings/values, secondary
+     for body copy, muted for captions/metadata/timestamps. --- */
+  --color-text: #f0f2f5; /* primary */
+  --color-text-secondary: #c3c9d3; /* body copy */
+  --color-text-muted: #9aa1b0; /* captions, metadata, least emphasis */
+
+  /* --- Accent: encodes exactly one meaning app-wide — "your frontier, the
+     recommended next action." The hero CTA, the Up-next card, the frontier
+     module's ring, the active nav item, the current lesson step. At most
+     one accent-emphasized element per screen; nothing decorative gets it. --- */
   --color-accent: #5b8cff;
   --color-accent-muted: #2c3a63;
   /* --color-accent (#5b8cff) reads fine as text/border/ring against our dark
@@ -14,11 +30,13 @@
      4.5:1. Solid-fill buttons use this darker shade instead so button text
      stays legible; text/border/ring usages of --color-accent are unaffected. */
   --color-accent-solid: #3a63cc;
-  /* Second accent, added in Phase 4 to visually distinguish the Algorithms
-     category from Data Structures (--color-accent) on the roadmap — the
-     "one accent" guidance predates the category discriminator. */
+
+  /* --- Category color: Algorithms' identity color, orthogonal to accent.
+     This encodes "which track this module belongs to," never "recommended
+     action" — the two systems never mix on the same element. --- */
   --color-accent-secondary: #e2a83e;
   --color-accent-secondary-muted: #4a3c1f;
+
   --color-success: #3ecf8e;
   --color-danger: #ef5a5a;
 

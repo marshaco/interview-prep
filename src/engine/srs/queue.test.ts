@@ -38,7 +38,7 @@ describe('buildTodaysReview', () => {
       { skillId: 'a', ease: 2.5, intervalDays: 1, dueAt: '2026-01-05T00:00:00.000Z', lapses: 0 },
       { skillId: 'b', ease: 2.5, intervalDays: 1, dueAt: '2026-01-20T00:00:00.000Z', lapses: 0 },
     ];
-    const result = buildTodaysReview(records, new Map(), TODAY);
+    const result = buildTodaysReview(records, new Map(), TODAY, []);
     expect(result.map((r) => r.skillId)).toEqual(['a']);
   });
 
@@ -53,7 +53,7 @@ describe('buildTodaysReview', () => {
       ['low-mastery', { skillId: 'low-mastery', score: 20, attempts: 5, updatedAt: '' }],
       ['low-mastery-more-overdue', { skillId: 'low-mastery-more-overdue', score: 20, attempts: 5, updatedAt: '' }],
     ]);
-    const result = buildTodaysReview(records, mastery, TODAY);
+    const result = buildTodaysReview(records, mastery, TODAY, []);
     expect(result.map((r) => r.skillId)).toEqual(['low-mastery-more-overdue', 'low-mastery', 'high-mastery']);
   });
 
@@ -63,7 +63,7 @@ describe('buildTodaysReview', () => {
       { skillId: 'attempted', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
     ];
     const mastery = new Map<string, SkillMastery>([['attempted', { skillId: 'attempted', score: 1, attempts: 5, updatedAt: '' }]]);
-    const result = buildTodaysReview(records, mastery, TODAY);
+    const result = buildTodaysReview(records, mastery, TODAY, []);
     expect(result[0]?.skillId).toBe('never-attempted');
   });
 
@@ -75,7 +75,38 @@ describe('buildTodaysReview', () => {
       dueAt: '2026-01-01T00:00:00.000Z',
       lapses: 0,
     }));
-    expect(buildTodaysReview(records, new Map(), TODAY, 5)).toHaveLength(5);
+    expect(buildTodaysReview(records, new Map(), TODAY, [], 5)).toHaveLength(5);
+  });
+
+  it('is never empty for a brand new user — unattempted skills fill the queue', () => {
+    const result = buildTodaysReview([], new Map(), TODAY, ['a', 'b', 'c']);
+    expect(result.map((r) => r.skillId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('puts real overdue reviews ahead of unattempted skills', () => {
+    const records: ReviewRecord[] = [{ skillId: 'overdue', ease: 2.5, intervalDays: 1, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0 }];
+    const mastery = new Map<string, SkillMastery>([['overdue', { skillId: 'overdue', score: 80, attempts: 5, updatedAt: '' }]]);
+    const result = buildTodaysReview(records, mastery, TODAY, ['overdue', 'fresh']);
+    expect(result.map((r) => r.skillId)).toEqual(['overdue', 'fresh']);
+  });
+
+  it('only uses unattempted skills to pad remaining slots, never past the cap', () => {
+    const records: ReviewRecord[] = Array.from({ length: 3 }, (_, i) => ({
+      skillId: `overdue${i}`,
+      ease: 2.5,
+      intervalDays: 1,
+      dueAt: '2026-01-01T00:00:00.000Z',
+      lapses: 0,
+    }));
+    const result = buildTodaysReview(records, new Map(), TODAY, ['fresh1', 'fresh2', 'fresh3', 'fresh4'], 5);
+    expect(result).toHaveLength(5);
+    expect(result.filter((r) => r.skillId.startsWith('fresh'))).toHaveLength(2);
+  });
+
+  it('does not re-add a skill that already has a review record, even if not due', () => {
+    const records: ReviewRecord[] = [{ skillId: 'not-due-yet', ease: 2.5, intervalDays: 1, dueAt: '2026-01-20T00:00:00.000Z', lapses: 0 }];
+    const result = buildTodaysReview(records, new Map(), TODAY, ['not-due-yet', 'fresh']);
+    expect(result.map((r) => r.skillId)).toEqual(['fresh']);
   });
 });
 
