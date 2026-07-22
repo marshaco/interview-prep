@@ -3,6 +3,7 @@ import { getModule } from '../../content/registry';
 import { MarkdownContent } from '../components/common/MarkdownContent';
 import { StaticSequenceDiagram } from '../components/viz/StaticSequenceDiagram';
 import { EmptyState } from '../components/common/EmptyState';
+import { FocusShell } from '../components/shell/FocusShell';
 
 export function LearnPage() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -28,14 +29,9 @@ export function LearnPage() {
   const lessons = learnStage.items.filter((item) => item.type === 'lesson');
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        to={`/modules/${module.id}`}
-        className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-      >
-        ← Back to module
-      </Link>
-      <h1 className="mb-1 mt-4 text-xl font-semibold text-text">{module.title}: Learn</h1>
+    <FocusShell backHref={`/modules/${module.id}`} backLabel="Back to module" title={`${module.title}: Learn`}>
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-6 py-10">
       <p className="mb-6 text-sm text-text-muted">{module.summary}</p>
 
       {lessons.length > 1 && (
@@ -74,6 +70,8 @@ export function LearnPage() {
       >
         Continue to {nextStage?.title ?? 'module'} →
       </Link>
-    </div>
+        </div>
+      </div>
+    </FocusShell>
   );
 }

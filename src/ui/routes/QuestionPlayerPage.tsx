@@ -26,14 +26,8 @@ export function QuestionPlayerPage() {
     <QuestionPlayerLayout
       question={question}
       player={player}
-      headerLeft={
-        <Link
-          to={`/modules/${question.moduleId}`}
-          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-        >
-          ← Back to module
-        </Link>
-      }
+      backHref={`/modules/${question.moduleId}`}
+      backLabel="Back to module"
       headerRight={
         <Link
           to={`/interview/${question.id}`}

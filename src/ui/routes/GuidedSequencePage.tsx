@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getModule, getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
@@ -45,14 +45,8 @@ export function GuidedSequencePage() {
     <QuestionPlayerLayout
       question={question}
       player={player}
-      headerLeft={
-        <Link
-          to={`/modules/${module.id}`}
-          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-        >
-          ← Back to module
-        </Link>
-      }
+      backHref={`/modules/${module.id}`}
+      backLabel="Back to module"
       headerRight={
         <span className="text-xs uppercase tracking-wide text-text-muted">
           {stage.title} — Step {stepIndex + 1} of {questionIds.length}

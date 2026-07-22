@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { buildTodaysReview, pickReviewQuestion, type DueReviewItem } from '../../engine/srs/queue';
 import { localDateIso } from '../../engine/srs/streaks';
 import { masteryStars } from '../../engine/mastery/mastery';
@@ -7,7 +6,7 @@ import { modules, questions, allSkillIds } from '../../content/registry';
 import { storageAdapter } from '../storageAdapter';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
-import { AppNav } from '../components/common/AppNav';
+import { AppShell } from '../components/shell/AppShell';
 import { EmptyState } from '../components/common/EmptyState';
 import type { CodeQuestion, SkillId } from '../../content/types';
 import type { SkillMastery } from '../../storage/types';
@@ -43,35 +42,30 @@ export function ReviewPage() {
 
   if (queue === null) {
     return (
-      <div>
-        <AppNav />
-        <div className="mx-auto max-w-2xl px-6 py-10">
-          <p className="text-text-muted">Loading today's review…</p>
-        </div>
-      </div>
+      <AppShell>
+        <p className="text-text-muted">Loading today's review…</p>
+      </AppShell>
     );
   }
 
   if (queue.length === 0) {
     return (
-      <div>
-        <AppNav />
+      <AppShell>
         <EmptyState title="Today's Review" description="Nothing due today. Come back tomorrow." />
-      </div>
+      </AppShell>
     );
   }
 
   if (currentIndex >= queue.length) {
     return (
-      <div>
-        <AppNav />
+      <AppShell>
         <EmptyState
           title="You're done for today"
           description={`Reviewed ${queue.length} skill${queue.length === 1 ? '' : 's'}.`}
-          actionLabel="Back to dashboard"
-          actionHref="/dashboard"
+          actionLabel="Back to home"
+          actionHref="/"
         />
-      </div>
+      </AppShell>
     );
   }
 
@@ -89,14 +83,8 @@ export function ReviewPage() {
     <QuestionPlayerLayout
       question={currentQuestion}
       player={player}
-      headerLeft={
-        <Link
-          to="/dashboard"
-          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-        >
-          ← Dashboard
-        </Link>
-      }
+      backHref="/"
+      backLabel="Home"
       headerRight={
         <span className="text-xs uppercase tracking-wide text-text-muted">
           Review — {currentIndex + 1} of {queue.length}

@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { getModule } from '../../content/registry';
-import { AppNav } from '../components/common/AppNav';
+import { AppShell } from '../components/shell/AppShell';
 import { EmptyState } from '../components/common/EmptyState';
 import { ModuleDetails } from '../components/module/ModuleDetails';
 
@@ -20,17 +20,14 @@ export function ModulePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <AppNav />
-      <div className="px-6 py-10">
-        <Link
-          to="/"
-          className="mb-4 inline-block text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-        >
-          ← Roadmap
-        </Link>
-        <ModuleDetails moduleId={module.id} />
-      </div>
-    </div>
+    <AppShell>
+      <Link
+        to="/"
+        className="mb-4 inline-block text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+      >
+        ← Roadmap
+      </Link>
+      <ModuleDetails moduleId={module.id} />
+    </AppShell>
   );
 }

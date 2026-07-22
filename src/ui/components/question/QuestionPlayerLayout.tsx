@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { CodeQuestion } from '../../../content/types';
 import type { useQuestionPlayer } from '../../hooks/useQuestionPlayer';
+import { FocusShell } from '../shell/FocusShell';
 import { MonacoEditor } from '../editor/MonacoEditor';
 import { PromptPane } from './PromptPane';
 import { HintsLadder } from './HintsLadder';
@@ -10,7 +11,8 @@ import { VisualizationPanel } from './VisualizationPanel';
 interface QuestionPlayerLayoutProps {
   question: CodeQuestion;
   player: ReturnType<typeof useQuestionPlayer>;
-  headerLeft: ReactNode;
+  backHref: string;
+  backLabel: ReactNode;
   headerRight?: ReactNode;
   /** Rendered as a thin strip below the header, above the editor — e.g. Review's progress bar. */
   subHeader?: ReactNode;
@@ -23,21 +25,16 @@ interface QuestionPlayerLayoutProps {
 export function QuestionPlayerLayout({
   question,
   player,
-  headerLeft,
+  backHref,
+  backLabel,
   headerRight,
   subHeader,
   footer,
   interviewMode = false,
 }: QuestionPlayerLayoutProps) {
   return (
-    <div className="flex h-screen flex-col bg-bg text-text">
-      <header className="flex items-center justify-between border-b border-border px-4 py-2">
-        {headerLeft}
-        <h1 className="text-sm font-semibold">{question.title}</h1>
-        {headerRight ?? <span />}
-      </header>
-      {subHeader}
-      <div className="flex min-h-0 flex-1">
+    <FocusShell backHref={backHref} backLabel={backLabel} title={question.title} headerRight={headerRight} subHeader={subHeader}>
+      <div className="flex h-full min-h-0">
         <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-border p-4">
           <PromptPane question={question} />
           {!interviewMode && (
@@ -99,6 +96,6 @@ export function QuestionPlayerLayout({
           </div>
         </main>
       </div>
-    </div>
+    </FocusShell>
   );
 }

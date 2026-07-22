@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
@@ -58,14 +58,8 @@ export function InterviewQuestionPage() {
       question={question}
       player={player}
       interviewMode
-      headerLeft={
-        <Link
-          to={`/modules/${question.moduleId}`}
-          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-        >
-          ← Exit interview
-        </Link>
-      }
+      backHref={`/modules/${question.moduleId}`}
+      backLabel="Exit interview"
       headerRight={
         <span className="rounded border border-border bg-bg-raised px-2 py-1 font-mono text-xs text-text">
           {formatElapsed(elapsedMs)}
