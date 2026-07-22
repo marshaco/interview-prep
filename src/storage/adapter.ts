@@ -1,22 +1,11 @@
 import type { QuestionId } from '../content/types';
-import type {
-  Attempt,
-  AttemptQuery,
-  Bookmark,
-  Draft,
-  ExportBundleV1,
-  Note,
-  ReviewRecord,
-  SkillMastery,
-} from './types';
+import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, Note, ReviewRecord } from './types';
 
 export interface StorageAdapter {
   getAttempts(q?: AttemptQuery): Promise<Attempt[]>;
   saveAttempt(a: Attempt): Promise<void>;
   getDraft(questionId: QuestionId): Promise<Draft | null>;
   saveDraft(d: Draft): Promise<void>;
-  getMastery(): Promise<SkillMastery[]>;
-  upsertMastery(m: SkillMastery): Promise<void>;
   getReviewRecords(): Promise<ReviewRecord[]>;
   upsertReviewRecord(r: ReviewRecord): Promise<void>;
   getNotes(questionId: QuestionId): Promise<Note[]>;

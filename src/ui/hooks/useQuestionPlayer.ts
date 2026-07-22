@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildHarness } from '../../engine/grading/harness';
 import { grade } from '../../engine/grading/grade';
-import { updateMastery } from '../../engine/mastery/mastery';
 import { deriveReviewQuality, review } from '../../engine/srs/scheduler';
 import { localDateIso } from '../../engine/srs/streaks';
 import { pythonRunner } from '../pythonRunner';
@@ -21,9 +20,9 @@ export interface PlayerResult {
 /**
  * Drives a single question's play/grade/persist lifecycle: draft
  * load/autosave, Run vs Submit, and — on a successful Submit — recording an
- * Attempt and updating mastery for every skill the question touches.
- * Extracted out of QuestionPlayerPage so the Guided Build stepper can reuse
- * the exact same behavior instead of re-implementing it.
+ * Attempt and updating the review schedule for every skill the question
+ * touches. Extracted out of QuestionPlayerPage so the Guided Build stepper
+ * can reuse the exact same behavior instead of re-implementing it.
  */
 export function useQuestionPlayer(question: CodeQuestion | undefined) {
   const [activeQuestionId, setActiveQuestionId] = useState(question?.id);
@@ -109,19 +108,17 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     // must land on the user's actual calendar day for streaks to be honest.
     await storageAdapter.logActiveDay(localDateIso(new Date()));
 
-    const masteryRecords = await storageAdapter.getMastery();
     const reviewRecords = await storageAdapter.getReviewRecords();
     const quality = deriveReviewQuality(scorecard.overall, hintsRevealed);
 
+    // Mastery is a pure computation over Attempt history (engine/mastery) —
+    // nothing to write here. The review schedule is genuinely incremental
+    // state (ease/interval carry forward), so that still gets upserted.
     await Promise.all(
-      question.skillIds.flatMap((skillId) => {
-        const previousMastery = masteryRecords.find((m) => m.skillId === skillId);
-        const updatedMastery = updateMastery(previousMastery, skillId, scorecard.overall, hintsRevealed, now);
-
+      question.skillIds.map((skillId) => {
         const previousReview = reviewRecords.find((r) => r.skillId === skillId);
         const updatedReview = review(previousReview, skillId, quality, now);
-
-        return [storageAdapter.upsertMastery(updatedMastery), storageAdapter.upsertReviewRecord(updatedReview)];
+        return storageAdapter.upsertReviewRecord(updatedReview);
       }),
     );
   }

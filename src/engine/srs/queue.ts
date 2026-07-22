@@ -1,5 +1,5 @@
 import type { CodeQuestion, SkillId } from '../../content/types';
-import type { Attempt, ReviewRecord, SkillMastery } from '../../storage/types';
+import type { Attempt, ReviewRecord } from '../../storage/types';
 
 export interface DueReviewItem {
   skillId: SkillId;
@@ -26,7 +26,7 @@ function daysBetween(fromIso: string, toIso: string): number {
  */
 export function buildTodaysReview(
   reviewRecords: ReviewRecord[],
-  masteryBySkill: ReadonlyMap<SkillId, SkillMastery>,
+  skillScores: ReadonlyMap<SkillId, number>,
   todayIso: string,
   allSkillIds: SkillId[] = [],
   cap = 10,
@@ -36,7 +36,7 @@ export function buildTodaysReview(
   const overdueItems: DueReviewItem[] = due.map((record) => ({
     skillId: record.skillId,
     overdueDays: Math.max(0, daysBetween(record.dueAt, todayIso)),
-    masteryScore: masteryBySkill.get(record.skillId)?.score ?? 0,
+    masteryScore: skillScores.get(record.skillId) ?? 0,
   }));
 
   overdueItems.sort((a, b) => a.masteryScore - b.masteryScore || b.overdueDays - a.overdueDays);

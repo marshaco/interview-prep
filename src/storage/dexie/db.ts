@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Attempt, Bookmark, Draft, Note, ReviewRecord, SkillMastery } from '../types';
+import type { Attempt, Bookmark, Draft, Note, ReviewRecord } from '../types';
 
 // dayLog rows are wrapped in an object (rather than storing the bare ISO
 // date string) so every table uniformly stores objects with a keyPath —
@@ -11,7 +11,6 @@ export interface DayLogRow {
 export class AppDatabase extends Dexie {
   attempts!: Table<Attempt, string>;
   drafts!: Table<Draft, string>;
-  mastery!: Table<SkillMastery, string>;
   reviewRecords!: Table<ReviewRecord, string>;
   notes!: Table<Note, string>;
   bookmarks!: Table<Bookmark, string>;
@@ -27,6 +26,11 @@ export class AppDatabase extends Dexie {
       notes: 'id, questionId',
       bookmarks: 'questionId',
       dayLog: 'date',
+    });
+    // v2: mastery is now a pure computation over attempts (engine/mastery),
+    // not stored state — the per-skill EWMA table it replaced is dropped.
+    this.version(2).stores({
+      mastery: null,
     });
   }
 }

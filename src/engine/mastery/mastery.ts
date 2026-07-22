@@ -1,64 +1,79 @@
-import type { Skill, SkillId } from '../../content/types';
-import type { SkillMastery } from '../../storage/types';
+import type { CodeQuestion, QuestionId, RoadmapModule, SkillId } from '../../content/types';
+import type { Attempt } from '../../storage/types';
 
-const MAX_STARS = 5;
-
-const EWMA_ATTEMPT_WEIGHT = 0.7;
-const EWMA_PRIOR_WEIGHT = 0.3;
-const HINT_CAP_THRESHOLD = 3; // hints 3-4 used -> attempt capped at 60
-const HINT_CAPPED_SCORE = 60;
-const MIN_ATTEMPTS_FOR_FULL_RANGE = 2; // < 2 attempts -> max 3 stars
-const LOW_EVIDENCE_STAR_CAP = 3;
+const HINT_DECAY = 0.85; // per hint revealed on the passing attempt
+const FAIL_DECAY = 0.9; // per failed submit before the eventual pass
+const MIN_PASS_SCORE = 0.4; // floor for any eventual pass, however many hints/fails it took
 
 /**
- * score' = 0.7 * attemptScore + 0.3 * score (EWMA, recent-weighted), per
- * ARCHITECTURE §7.2. On the very first attempt for a skill there is no prior
- * score to blend with — treating a nonexistent prior as 0 would understate a
- * good first attempt (e.g. a perfect 100 would blend down to 70), so the
- * first observation is taken as-is instead.
+ * One exercise's mastery contribution, 0-1 — Triecode UI spec §11 (replaces
+ * ARCHITECTURE §7.2's per-skill EWMA). 1.0 for a clean solve (no hints,
+ * passes on the first submit); each hint revealed on the passing attempt
+ * multiplies by 0.85, each failed submit before that pass multiplies by
+ * 0.9, floored at 0.4 once passed at all. 0 if never passed. Takes the
+ * question's full attempt history (any order) so a future time-decay
+ * pass (Phase 5) can slot in without changing callers.
  */
-export function updateMastery(
-  previous: SkillMastery | undefined,
-  skillId: SkillId,
-  attemptScore: number,
-  hintsUsed: number,
-  now: string,
-): SkillMastery {
-  const effectiveAttemptScore = hintsUsed >= HINT_CAP_THRESHOLD ? Math.min(attemptScore, HINT_CAPPED_SCORE) : attemptScore;
-
-  const score =
-    previous === undefined
-      ? effectiveAttemptScore
-      : EWMA_ATTEMPT_WEIGHT * effectiveAttemptScore + EWMA_PRIOR_WEIGHT * previous.score;
-
-  return {
-    skillId,
-    score,
-    attempts: (previous?.attempts ?? 0) + 1,
-    updatedAt: now,
-  };
-}
-
-/** Stars are a display function over the stored raw score, capped by evidence. */
-export function masteryStars(mastery: SkillMastery): number {
-  const rawStars = Math.floor(mastery.score / 20);
-  if (mastery.attempts < MIN_ATTEMPTS_FOR_FULL_RANGE) {
-    return Math.min(rawStars, LOW_EVIDENCE_STAR_CAP);
+export function computeExerciseScore(attempts: Attempt[]): number {
+  const sorted = [...attempts].sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+  let failuresBeforePass = 0;
+  for (const attempt of sorted) {
+    if (attempt.scorecard.overall === 100) {
+      const raw = HINT_DECAY ** attempt.hintsUsed * FAIL_DECAY ** failuresBeforePass;
+      return Math.max(MIN_PASS_SCORE, raw);
+    }
+    failuresBeforePass += 1;
   }
-  return rawStars;
+  return 0;
+}
+
+function groupAttemptsByQuestion(attempts: Attempt[]): Map<QuestionId, Attempt[]> {
+  const byQuestion = new Map<QuestionId, Attempt[]>();
+  for (const attempt of attempts) {
+    const existing = byQuestion.get(attempt.questionId);
+    if (existing) existing.push(attempt);
+    else byQuestion.set(attempt.questionId, [attempt]);
+  }
+  return byQuestion;
+}
+
+function moduleQuestionIds(module: RoadmapModule): QuestionId[] {
+  return module.stages.flatMap((stage) =>
+    stage.items.filter((item) => item.type === 'question').map((item) => item.questionId),
+  );
 }
 
 /**
- * Module-level roadmap progress (0-1): average star rating across the
- * module's skills, out of the 5-star max. A skill with no mastery record
- * yet (never attempted) counts as 0 stars, not "excluded from the average"
- * — an unattempted skill is not evidence of mastery.
+ * Module mastery (0-1): the mean of every exercise's score, plus one more
+ * exercise-equivalent for a completed Learn stage (1 if marked complete, 0
+ * otherwise) when the module has one. This is the only number that may
+ * drive a displayed percentage (ProgressRing) — nothing computes
+ * solved/total as mastery.
  */
-export function moduleProgress(skills: Skill[], masteryBySkill: ReadonlyMap<SkillId, SkillMastery>): number {
-  if (skills.length === 0) return 0;
-  const totalStars = skills.reduce((sum, skill) => {
-    const mastery = masteryBySkill.get(skill.id);
-    return sum + (mastery ? masteryStars(mastery) : 0);
-  }, 0);
-  return totalStars / (skills.length * MAX_STARS);
+export function computeModuleMastery(module: RoadmapModule, attempts: Attempt[], isLearnComplete: boolean): number {
+  const byQuestion = groupAttemptsByQuestion(attempts);
+  const scores = moduleQuestionIds(module).map((id) => computeExerciseScore(byQuestion.get(id) ?? []));
+
+  const hasLearnStage = module.stages.some((stage) => stage.type === 'learn' && stage.items.length > 0);
+  if (hasLearnStage) {
+    scores.push(isLearnComplete ? 1 : 0);
+  }
+
+  if (scores.length === 0) return 0;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+/**
+ * Per-skill score (0-1): the mean exercise score across every question
+ * tagged with this skill. Spaced repetition schedules individual skills,
+ * not whole modules, so the SRS queue (engine/srs/queue.ts) needs this
+ * finer granularity — it reuses computeExerciseScore rather than a second
+ * formula.
+ */
+export function computeSkillScore(skillId: SkillId, questions: CodeQuestion[], attempts: Attempt[]): number {
+  const relevant = questions.filter((q) => q.skillIds.includes(skillId));
+  if (relevant.length === 0) return 0;
+  const byQuestion = groupAttemptsByQuestion(attempts);
+  const scores = relevant.map((q) => computeExerciseScore(byQuestion.get(q.id) ?? []));
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
 }

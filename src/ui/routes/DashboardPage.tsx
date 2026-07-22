@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { modules, getQuestion, allSkillIds } from '../../content/registry';
-import { masteryStars, moduleProgress } from '../../engine/mastery/mastery';
+import { modules, questions, getQuestion, allSkillIds } from '../../content/registry';
+import { computeModuleMastery, computeSkillScore } from '../../engine/mastery/mastery';
 import { buildTodaysReview } from '../../engine/srs/queue';
 import { currentStreak, localDateIso, longestStreak } from '../../engine/srs/streaks';
 import { storageAdapter } from '../storageAdapter';
 import { ProgressRing } from '../components/common/ProgressRing';
-import { StarRating } from '../components/common/StarRating';
 import { AppNav } from '../components/common/AppNav';
 import { StreakCalendar } from '../components/common/StreakCalendar';
-import type { Attempt, ReviewRecord, SkillMastery } from '../../storage/types';
-import type { SkillId } from '../../content/types';
+import type { Attempt, ReviewRecord } from '../../storage/types';
 
 interface DashboardData {
-  mastery: SkillMastery[];
   attempts: Attempt[];
   dayLog: string[];
   reviewRecords: ReviewRecord[];
@@ -27,15 +24,12 @@ export function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
-      storageAdapter.getMastery(),
-      storageAdapter.getAttempts(),
-      storageAdapter.getDayLog(),
-      storageAdapter.getReviewRecords(),
-    ]).then(([mastery, attempts, dayLog, reviewRecords]) => {
-      if (cancelled) return;
-      setData({ mastery, attempts, dayLog, reviewRecords });
-    });
+    void Promise.all([storageAdapter.getAttempts(), storageAdapter.getDayLog(), storageAdapter.getReviewRecords()]).then(
+      ([attempts, dayLog, reviewRecords]) => {
+        if (cancelled) return;
+        setData({ attempts, dayLog, reviewRecords });
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -52,17 +46,18 @@ export function DashboardPage() {
     );
   }
 
-  const masteryBySkill = new Map<SkillId, SkillMastery>(data.mastery.map((m) => [m.skillId, m]));
   const skillById = new Map(modules.flatMap((m) => m.skills).map((s) => [s.id, s]));
   const today = localDateIso(new Date());
+  const attemptedQuestionIds = new Set(data.attempts.map((a) => a.questionId));
 
   const current = currentStreak(data.dayLog, today);
   const longest = longestStreak(data.dayLog);
-  const dueToday = buildTodaysReview(data.reviewRecords, masteryBySkill, today, allSkillIds, Number.MAX_SAFE_INTEGER);
+  const skillScores = new Map(allSkillIds.map((id) => [id, computeSkillScore(id, questions, data.attempts)]));
+  const dueToday = buildTodaysReview(data.reviewRecords, skillScores, today, allSkillIds, Number.MAX_SAFE_INTEGER);
 
-  const weakestSkills = data.mastery
-    .filter((m) => m.attempts >= 1)
-    .slice()
+  const weakestSkills = allSkillIds
+    .filter((skillId) => questions.some((q) => q.skillIds.includes(skillId) && attemptedQuestionIds.has(q.id)))
+    .map((skillId) => ({ skillId, score: skillScores.get(skillId) ?? 0 }))
     .sort((a, b) => a.score - b.score)
     .slice(0, WEAKEST_SKILLS_LIMIT);
 
@@ -119,7 +114,7 @@ export function DashboardPage() {
                       to={`/modules/${module.id}`}
                       className="flex items-center gap-2 rounded border border-border bg-bg-raised px-3 py-2 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
-                      <ProgressRing progress={moduleProgress(module.skills, masteryBySkill)} size={24} strokeWidth={3} className="stroke-accent" />
+                      <ProgressRing progress={computeModuleMastery(module, data.attempts, false)} size="sm" />
                       <span className="truncate">{module.title}</span>
                     </Link>
                   </li>
@@ -135,12 +130,7 @@ export function DashboardPage() {
                       to={`/modules/${module.id}`}
                       className="flex items-center gap-2 rounded border border-border bg-bg-raised px-3 py-2 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
-                      <ProgressRing
-                        progress={moduleProgress(module.skills, masteryBySkill)}
-                        size={24}
-                        strokeWidth={3}
-                        className="stroke-accent-secondary"
-                      />
+                      <ProgressRing progress={computeModuleMastery(module, data.attempts, false)} size="sm" />
                       <span className="truncate">{module.title}</span>
                     </Link>
                   </li>
@@ -162,7 +152,7 @@ export function DashboardPage() {
                   className="flex items-center justify-between rounded border border-border bg-bg-raised px-3 py-2 text-sm"
                 >
                   <span className="text-text">{skillById.get(m.skillId)?.title ?? m.skillId}</span>
-                  <StarRating stars={masteryStars(m)} />
+                  <span className="text-text-muted">{Math.round(m.score * 100)}%</span>
                 </li>
               ))}
             </ul>

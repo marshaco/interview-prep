@@ -20,13 +20,6 @@ export interface Draft {
   updatedAt: string; // ISO
 }
 
-export interface SkillMastery {
-  skillId: SkillId;
-  score: number; // raw 0-100 float; stars are a display function (ARCHITECTURE §7.2)
-  attempts: number;
-  updatedAt: string; // ISO
-}
-
 export interface ReviewRecord {
   skillId: SkillId;
   ease: number; // 1.3 - 2.8
@@ -53,7 +46,6 @@ export interface ExportBundleV1 {
   tables: {
     attempts: Attempt[];
     drafts: Draft[];
-    mastery: SkillMastery[];
     reviewRecords: ReviewRecord[];
     notes: Note[];
     bookmarks: Bookmark[];

@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { ReactFlow, Background, Controls, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { modules } from '../../content/registry';
-import { moduleProgress } from '../../engine/mastery/mastery';
+import { computeModuleMastery } from '../../engine/mastery/mastery';
 import { storageAdapter } from '../storageAdapter';
 import { RoadmapNode, type RoadmapNodeType } from '../components/roadmap/RoadmapNode';
 import { computeRoadmapPositions } from '../components/roadmap/roadmapLayout';
 import { AppNav } from '../components/common/AppNav';
 import { ModuleDetails } from '../components/module/ModuleDetails';
-import type { ModuleId, SkillId } from '../../content/types';
-import type { SkillMastery } from '../../storage/types';
+import type { ModuleId } from '../../content/types';
+import type { Attempt } from '../../storage/types';
 
 const nodeTypes = { roadmapModule: RoadmapNode };
 
@@ -31,7 +31,7 @@ const CATEGORY_TABS: { kind: Category; label: string; accentClass: string; activ
 ];
 
 export function RoadmapPage() {
-  const [masteryBySkill, setMasteryBySkill] = useState<ReadonlyMap<SkillId, SkillMastery>>(new Map());
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [activeCategory, setActiveCategory] = useState<Category>('data_structure');
   const [selectedModuleId, setSelectedModuleId] = useState<ModuleId | null>(null);
   const [renderedModuleId, setRenderedModuleId] = useState<ModuleId | null>(null);
@@ -52,9 +52,9 @@ export function RoadmapPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void storageAdapter.getMastery().then((records) => {
+    void storageAdapter.getAttempts().then((allAttempts) => {
       if (cancelled) return;
-      setMasteryBySkill(new Map(records.map((record) => [record.skillId, record])));
+      setAttempts(allAttempts);
     });
     return () => {
       cancelled = true;
@@ -85,12 +85,12 @@ export function RoadmapPage() {
             title: module.title,
             category: module.kind === 'data_structure' ? 'Data Structures' : 'Algorithms',
             isGhost,
-            progress: moduleProgress(module.skills, masteryBySkill),
+            progress: computeModuleMastery(module, attempts, false),
             onActivate: () => setSelectedModuleId(module.id),
           },
         };
       }),
-    [categoryModules, positions, masteryBySkill],
+    [categoryModules, positions, attempts],
   );
 
   const edges: Edge[] = useMemo(

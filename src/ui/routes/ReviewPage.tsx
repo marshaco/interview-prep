@@ -1,33 +1,30 @@
 import { useEffect, useState } from 'react';
 import { buildTodaysReview, pickReviewQuestion, type DueReviewItem } from '../../engine/srs/queue';
 import { localDateIso } from '../../engine/srs/streaks';
-import { masteryStars } from '../../engine/mastery/mastery';
+import { computeSkillScore } from '../../engine/mastery/mastery';
 import { modules, questions, allSkillIds } from '../../content/registry';
 import { storageAdapter } from '../storageAdapter';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
 import { AppShell } from '../components/shell/AppShell';
 import { EmptyState } from '../components/common/EmptyState';
-import type { CodeQuestion, SkillId } from '../../content/types';
-import type { SkillMastery } from '../../storage/types';
+import type { CodeQuestion } from '../../content/types';
 
 const skillById = new Map(modules.flatMap((m) => m.skills).map((s) => [s.id, s]));
 
 export function ReviewPage() {
   const [queue, setQueue] = useState<DueReviewItem[] | null>(null);
   const [picks, setPicks] = useState<(CodeQuestion | null)[]>([]);
-  const [masteryBySkill, setMasteryBySkill] = useState<ReadonlyMap<SkillId, SkillMastery>>(new Map());
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([storageAdapter.getReviewRecords(), storageAdapter.getMastery(), storageAdapter.getAttempts()]).then(
-      ([reviewRecords, masteryRecords, attempts]) => {
+    void Promise.all([storageAdapter.getReviewRecords(), storageAdapter.getAttempts()]).then(
+      ([reviewRecords, attempts]) => {
         if (cancelled) return;
-        const bySkill = new Map(masteryRecords.map((m) => [m.skillId, m]));
+        const skillScores = new Map(allSkillIds.map((id) => [id, computeSkillScore(id, questions, attempts)]));
         const today = localDateIso(new Date());
-        const dueItems = buildTodaysReview(reviewRecords, bySkill, today, allSkillIds);
-        setMasteryBySkill(bySkill);
+        const dueItems = buildTodaysReview(reviewRecords, skillScores, today, allSkillIds);
         setQueue(dueItems);
         setPicks(dueItems.map((item) => pickReviewQuestion(item.skillId, questions, attempts)));
       },
@@ -101,7 +98,6 @@ export function ReviewPage() {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {queue.map((item, index) => {
               const skill = skillById.get(item.skillId);
-              const mastery = masteryBySkill.get(item.skillId);
               const isCurrent = index === currentIndex;
               const isDone = index < currentIndex;
               return (
@@ -117,7 +113,6 @@ export function ReviewPage() {
                 >
                   {isDone && <span className="text-success">✓</span>}
                   <span>{skill?.title ?? item.skillId}</span>
-                  <span className="text-accent">{'★'.repeat(mastery ? masteryStars(mastery) : 0)}</span>
                 </div>
               );
             })}

@@ -11,7 +11,7 @@ const HINT_QUALITY_PENALTY_THRESHOLD = 3;
 
 /** Grades an attempt into SM-2 quality (0-5) from its scorecard and hint usage. */
 export function deriveReviewQuality(overall: number, hintsUsed: number): number {
-  const base = Math.round(overall / 20); // same 20-point bucketing as masteryStars' floor(score/20)
+  const base = Math.round(overall / 20); // 20-point bucketing of the scorecard, independent of module mastery
   const penalty = hintsUsed >= HINT_QUALITY_PENALTY_THRESHOLD ? 1 : 0;
   return Math.max(0, Math.min(5, base - penalty));
 }
@@ -28,9 +28,8 @@ function addDaysToIso(iso: string, days: number): string {
 
 /**
  * SM-2-lite: (record, quality, now) -> record, per ARCHITECTURE §7.3.
- * Accepts `record: undefined` for a skill with no review history yet —
- * matching the pattern `updateMastery` already established — rather than
- * requiring a separate initialization call at every call site.
+ * Accepts `record: undefined` for a skill with no review history yet,
+ * rather than requiring a separate initialization call at every call site.
  */
 export function review(record: ReviewRecord | undefined, skillId: SkillId, quality: number, now: string): ReviewRecord {
   const ease = record?.ease ?? EASE_DEFAULT;

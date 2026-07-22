@@ -1,6 +1,6 @@
 import type { QuestionId } from '../../content/types';
 import type { StorageAdapter } from '../adapter';
-import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, Note, ReviewRecord, SkillMastery } from '../types';
+import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, Note, ReviewRecord } from '../types';
 import { applyImportBundle, buildExportBundle, validateExportBundle } from '../exchange';
 import { AppDatabase } from './db';
 
@@ -29,14 +29,6 @@ export class DexieAdapter implements StorageAdapter {
 
   async saveDraft(d: Draft): Promise<void> {
     await this.db.drafts.put(d);
-  }
-
-  async getMastery(): Promise<SkillMastery[]> {
-    return this.db.mastery.toArray();
-  }
-
-  async upsertMastery(m: SkillMastery): Promise<void> {
-    await this.db.mastery.put(m);
   }
 
   async getReviewRecords(): Promise<ReviewRecord[]> {
@@ -90,7 +82,6 @@ export class DexieAdapter implements StorageAdapter {
     const tables = [
       this.db.attempts,
       this.db.drafts,
-      this.db.mastery,
       this.db.reviewRecords,
       this.db.notes,
       this.db.bookmarks,

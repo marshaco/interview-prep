@@ -1,88 +1,163 @@
 import { describe, expect, it } from 'vitest';
-import { masteryStars, moduleProgress, updateMastery } from './mastery';
-import type { Skill } from '../../content/types';
-import type { SkillMastery } from '../../storage/types';
+import { computeExerciseScore, computeModuleMastery, computeSkillScore } from './mastery';
+import type { CodeQuestion, RoadmapModule } from '../../content/types';
+import type { Attempt } from '../../storage/types';
 
-describe('updateMastery', () => {
-  it('takes the first attempt as-is rather than blending with a phantom zero prior', () => {
-    const result = updateMastery(undefined, 'linked-list/append', 100, 0, '2026-01-01T00:00:00.000Z');
-    expect(result).toEqual({
-      skillId: 'linked-list/append',
-      score: 100,
-      attempts: 1,
-      updatedAt: '2026-01-01T00:00:00.000Z',
+function fakeAttempt(overrides: Partial<Attempt> & { questionId: string }): Attempt {
+  return {
+    id: crypto.randomUUID(),
+    code: '',
+    scorecard: { questionId: overrides.questionId, correctness: { correct: 1, total: 1 }, edgeCases: { correct: 1, total: 1 }, overall: 100, failures: [], style: null, readability: null, complexity: null },
+    hintsUsed: 0,
+    durationMs: 0,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function passing(questionId: string, createdAt: string, hintsUsed = 0): Attempt {
+  return fakeAttempt({ questionId, createdAt, hintsUsed, scorecard: { questionId, correctness: { correct: 1, total: 1 }, edgeCases: { correct: 1, total: 1 }, overall: 100, failures: [], style: null, readability: null, complexity: null } });
+}
+
+function failing(questionId: string, createdAt: string): Attempt {
+  return fakeAttempt({ questionId, createdAt, scorecard: { questionId, correctness: { correct: 0, total: 1 }, edgeCases: { correct: 0, total: 1 }, overall: 40, failures: [], style: null, readability: null, complexity: null } });
+}
+
+function fakeQuestion(id: string, skillIds: string[]): CodeQuestion {
+  return {
+    id,
+    kind: 'method_impl',
+    moduleId: 'm',
+    skillIds,
+    title: id,
+    prompt: '',
+    starterCode: '',
+    solution: '',
+    hints: ['a', 'b', 'c', 'd'],
+    spec: { mode: 'function', entryPoint: 'fn', argTypes: [], resultType: 'value', tests: [] },
+  };
+}
+
+describe('computeExerciseScore', () => {
+  it('is 0 for a question that has never been attempted', () => {
+    expect(computeExerciseScore([])).toBe(0);
+  });
+
+  it('is 0 when every attempt failed', () => {
+    expect(computeExerciseScore([failing('q1', '2026-01-01T00:00:00.000Z')])).toBe(0);
+  });
+
+  it('is 1.0 for a clean solve: no hints, passes on the first submit', () => {
+    expect(computeExerciseScore([passing('q1', '2026-01-01T00:00:00.000Z')])).toBe(1);
+  });
+
+  it('decays by 0.85 per hint used on the passing attempt', () => {
+    const score = computeExerciseScore([passing('q1', '2026-01-01T00:00:00.000Z', 2)]);
+    expect(score).toBeCloseTo(0.85 ** 2, 10);
+  });
+
+  it('decays by 0.9 per failed submit before the eventual pass', () => {
+    const attempts = [
+      failing('q1', '2026-01-01T00:00:00.000Z'),
+      failing('q1', '2026-01-02T00:00:00.000Z'),
+      passing('q1', '2026-01-03T00:00:00.000Z'),
+    ];
+    expect(computeExerciseScore(attempts)).toBeCloseTo(0.9 ** 2, 10);
+  });
+
+  it('floors the score at 0.4 for any eventual pass, however many hints/fails it took', () => {
+    const attempts = [
+      failing('q1', '2026-01-01T00:00:00.000Z'),
+      failing('q1', '2026-01-02T00:00:00.000Z'),
+      failing('q1', '2026-01-03T00:00:00.000Z'),
+      failing('q1', '2026-01-04T00:00:00.000Z'),
+      passing('q1', '2026-01-05T00:00:00.000Z', 4),
+    ];
+    expect(computeExerciseScore(attempts)).toBe(0.4);
+  });
+
+  it('only counts failures strictly before the first pass, ignoring attempts after it', () => {
+    const attempts = [
+      passing('q1', '2026-01-01T00:00:00.000Z'),
+      failing('q1', '2026-01-02T00:00:00.000Z'), // a later re-attempt that happens to fail
+    ];
+    expect(computeExerciseScore(attempts)).toBe(1);
+  });
+
+  it('is order-independent — attempts may be passed in any order', () => {
+    const attempts = [passing('q1', '2026-01-03T00:00:00.000Z'), failing('q1', '2026-01-01T00:00:00.000Z')];
+    const reversed = [...attempts].reverse();
+    expect(computeExerciseScore(attempts)).toBe(computeExerciseScore(reversed));
+  });
+});
+
+describe('computeModuleMastery', () => {
+  function fakeModule(overrides: Partial<RoadmapModule> = {}): RoadmapModule {
+    return {
+      id: 'm',
+      kind: 'data_structure',
+      title: 'M',
+      summary: '',
+      prerequisites: [],
+      skills: [],
+      stages: [
+        { type: 'guided_build', title: 'Guided Build', items: [{ type: 'question', questionId: 'q1' }, { type: 'question', questionId: 'q2' }] },
+      ],
+      ...overrides,
+    };
+  }
+
+  it('is 0 for a module with no exercises and no Learn stage', () => {
+    const module = fakeModule({ stages: [] });
+    expect(computeModuleMastery(module, [], false)).toBe(0);
+  });
+
+  it('is the mean of exercise scores when there is no Learn stage', () => {
+    const module = fakeModule();
+    const attempts = [passing('q1', '2026-01-01T00:00:00.000Z'), failing('q2', '2026-01-01T00:00:00.000Z')];
+    expect(computeModuleMastery(module, attempts, false)).toBe(0.5);
+  });
+
+  it('counts a completed Learn stage as one more exercise-equivalent', () => {
+    const module = fakeModule({
+      stages: [
+        { type: 'learn', title: 'Learn', items: [{ type: 'lesson', lesson: { id: 'l', title: 'L', body: '' } }] },
+        { type: 'guided_build', title: 'Guided Build', items: [{ type: 'question', questionId: 'q1' }] },
+      ],
     });
+    const attempts = [passing('q1', '2026-01-01T00:00:00.000Z')];
+    // Learn complete (1) + q1 passed clean (1) -> mean = 1
+    expect(computeModuleMastery(module, attempts, true)).toBe(1);
+    // Learn not complete (0) + q1 passed clean (1) -> mean = 0.5
+    expect(computeModuleMastery(module, attempts, false)).toBe(0.5);
   });
 
-  it('blends subsequent attempts via 0.7 attempt / 0.3 prior EWMA', () => {
-    const first = updateMastery(undefined, 'linked-list/append', 100, 0, '2026-01-01T00:00:00.000Z');
-    const second = updateMastery(first, 'linked-list/append', 50, 0, '2026-01-02T00:00:00.000Z');
-    // 0.7 * 50 + 0.3 * 100 = 35 + 30 = 65
-    expect(second.score).toBe(65);
-    expect(second.attempts).toBe(2);
-  });
-
-  it('caps the effective attempt score at 60 when 3+ hints were used', () => {
-    const result = updateMastery(undefined, 'linked-list/append', 100, 3, '2026-01-01T00:00:00.000Z');
-    expect(result.score).toBe(60);
-  });
-
-  it('does not cap the attempt score when fewer than 3 hints were used', () => {
-    const result = updateMastery(undefined, 'linked-list/append', 100, 2, '2026-01-01T00:00:00.000Z');
-    expect(result.score).toBe(100);
-  });
-
-  it('applies the hint cap to the current attempt only, not the blended prior', () => {
-    const first = updateMastery(undefined, 'linked-list/append', 100, 0, '2026-01-01T00:00:00.000Z');
-    const second = updateMastery(first, 'linked-list/append', 100, 4, '2026-01-02T00:00:00.000Z');
-    // 0.7 * 60 (capped) + 0.3 * 100 = 42 + 30 = 72
-    expect(second.score).toBe(72);
+  it('does not count an empty Learn stage (no lessons authored yet) as an exercise-equivalent', () => {
+    const module = fakeModule({
+      stages: [
+        { type: 'learn', title: 'Learn', items: [] },
+        { type: 'guided_build', title: 'Guided Build', items: [{ type: 'question', questionId: 'q1' }] },
+      ],
+    });
+    const attempts = [passing('q1', '2026-01-01T00:00:00.000Z')];
+    expect(computeModuleMastery(module, attempts, true)).toBe(1);
   });
 });
 
-describe('masteryStars', () => {
-  it('floors score/20 into a 0-5 star range', () => {
-    expect(masteryStars({ skillId: 's', score: 0, attempts: 5, updatedAt: '' })).toBe(0);
-    expect(masteryStars({ skillId: 's', score: 39, attempts: 5, updatedAt: '' })).toBe(1);
-    expect(masteryStars({ skillId: 's', score: 100, attempts: 5, updatedAt: '' })).toBe(5);
+describe('computeSkillScore', () => {
+  it('is 0 when no question is tagged with this skill', () => {
+    expect(computeSkillScore('ghost/skill', [fakeQuestion('q1', ['other'])], [])).toBe(0);
   });
 
-  it('caps stars at 3 when fewer than 2 attempts have been recorded', () => {
-    expect(masteryStars({ skillId: 's', score: 100, attempts: 1, updatedAt: '' })).toBe(3);
-    expect(masteryStars({ skillId: 's', score: 40, attempts: 1, updatedAt: '' })).toBe(2);
+  it('is the mean exercise score across every question tagged with the skill', () => {
+    const questions = [fakeQuestion('q1', ['s']), fakeQuestion('q2', ['s'])];
+    const attempts = [passing('q1', '2026-01-01T00:00:00.000Z'), failing('q2', '2026-01-01T00:00:00.000Z')];
+    expect(computeSkillScore('s', questions, attempts)).toBe(0.5);
   });
 
-  it('does not cap stars once 2+ attempts have been recorded', () => {
-    expect(masteryStars({ skillId: 's', score: 100, attempts: 2, updatedAt: '' })).toBe(5);
-  });
-});
-
-describe('moduleProgress', () => {
-  const skill = (id: string): Skill => ({ id, moduleId: 'm', title: id, kind: 'method' });
-  const mastery = (skillId: string, score: number, attempts = 2): SkillMastery => ({
-    skillId,
-    score,
-    attempts,
-    updatedAt: '',
-  });
-
-  it('is 0 for a module with no skills', () => {
-    expect(moduleProgress([], new Map())).toBe(0);
-  });
-
-  it('treats a never-attempted skill as 0 stars, not as excluded from the average', () => {
-    const skills = [skill('a'), skill('b')];
-    const masteryBySkill = new Map([['a', mastery('a', 100)]]); // 5 stars; 'b' has no record
-    // (5 + 0) / (2 skills * 5 max) = 0.5
-    expect(moduleProgress(skills, masteryBySkill)).toBe(0.5);
-  });
-
-  it('is 1 when every skill is at 5 stars', () => {
-    const skills = [skill('a'), skill('b')];
-    const masteryBySkill = new Map([
-      ['a', mastery('a', 100)],
-      ['b', mastery('b', 100)],
-    ]);
-    expect(moduleProgress(skills, masteryBySkill)).toBe(1);
+  it('ignores questions tagged with other skills', () => {
+    const questions = [fakeQuestion('q1', ['s']), fakeQuestion('q2', ['other'])];
+    const attempts = [passing('q1', '2026-01-01T00:00:00.000Z'), failing('q2', '2026-01-01T00:00:00.000Z')];
+    expect(computeSkillScore('s', questions, attempts)).toBe(1);
   });
 });

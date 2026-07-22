@@ -57,16 +57,6 @@ describe('DexieAdapter', () => {
     expect(await adapter.getDraft('linked-list/prepend')).toBeNull();
   });
 
-  it('round-trips mastery records, upserting by skillId', async () => {
-    const adapter = freshAdapter();
-    await adapter.upsertMastery({ skillId: 'linked-list/append', score: 50, attempts: 1, updatedAt: '2026-01-01T00:00:00.000Z' });
-    await adapter.upsertMastery({ skillId: 'linked-list/append', score: 75, attempts: 2, updatedAt: '2026-01-02T00:00:00.000Z' });
-
-    const mastery = await adapter.getMastery();
-    expect(mastery).toHaveLength(1);
-    expect(mastery[0]?.score).toBe(75);
-  });
-
   it('round-trips notes and bookmarks, toggling bookmarks on/off', async () => {
     const adapter = freshAdapter();
     await adapter.saveNote({ id: 'n1', questionId: 'linked-list/append', body: 'remember this', createdAt: '2026-01-01T00:00:00.000Z' });
@@ -90,7 +80,6 @@ describe('DexieAdapter', () => {
     const adapter = freshAdapter();
     await adapter.saveAttempt(fakeAttempt({ id: 'a1' }));
     await adapter.saveDraft({ questionId: 'linked-list/append', code: 'draft', updatedAt: '2026-01-01T00:00:00.000Z' });
-    await adapter.upsertMastery({ skillId: 'linked-list/append', score: 80, attempts: 3, updatedAt: '2026-01-01T00:00:00.000Z' });
     await adapter.upsertReviewRecord({ skillId: 'linked-list/append', ease: 2.5, intervalDays: 3, dueAt: '2026-01-05T00:00:00.000Z', lapses: 0 });
     await adapter.saveNote({ id: 'n1', questionId: 'linked-list/append', body: 'note', createdAt: '2026-01-01T00:00:00.000Z' });
     await adapter.toggleBookmark('linked-list/append');
@@ -101,14 +90,12 @@ describe('DexieAdapter', () => {
 
     await adapter.wipeAll();
     expect(await adapter.getAttempts()).toEqual([]);
-    expect(await adapter.getMastery()).toEqual([]);
     expect(await adapter.getBookmarks()).toEqual([]);
 
     await adapter.importAll(bundle);
 
     expect(await adapter.getAttempts()).toHaveLength(1);
     expect(await adapter.getDraft('linked-list/append')).not.toBeNull();
-    expect(await adapter.getMastery()).toHaveLength(1);
     expect(await adapter.getReviewRecords()).toHaveLength(1);
     expect(await adapter.getNotes('linked-list/append')).toHaveLength(1);
     expect(await adapter.getBookmarks()).toHaveLength(1);

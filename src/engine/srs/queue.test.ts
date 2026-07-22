@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTodaysReview, pickReviewQuestion } from './queue';
-import type { Attempt, ReviewRecord, SkillMastery } from '../../storage/types';
+import type { Attempt, ReviewRecord } from '../../storage/types';
 import type { CodeQuestion } from '../../content/types';
 
 const TODAY = '2026-01-10T00:00:00.000Z';
@@ -48,10 +48,10 @@ describe('buildTodaysReview', () => {
       { skillId: 'low-mastery', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
       { skillId: 'low-mastery-more-overdue', ease: 2.5, intervalDays: 1, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0 },
     ];
-    const mastery = new Map<string, SkillMastery>([
-      ['high-mastery', { skillId: 'high-mastery', score: 90, attempts: 5, updatedAt: '' }],
-      ['low-mastery', { skillId: 'low-mastery', score: 20, attempts: 5, updatedAt: '' }],
-      ['low-mastery-more-overdue', { skillId: 'low-mastery-more-overdue', score: 20, attempts: 5, updatedAt: '' }],
+    const mastery = new Map<string, number>([
+      ['high-mastery', 0.9],
+      ['low-mastery', 0.2],
+      ['low-mastery-more-overdue', 0.2],
     ]);
     const result = buildTodaysReview(records, mastery, TODAY, []);
     expect(result.map((r) => r.skillId)).toEqual(['low-mastery-more-overdue', 'low-mastery', 'high-mastery']);
@@ -62,7 +62,7 @@ describe('buildTodaysReview', () => {
       { skillId: 'never-attempted', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
       { skillId: 'attempted', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
     ];
-    const mastery = new Map<string, SkillMastery>([['attempted', { skillId: 'attempted', score: 1, attempts: 5, updatedAt: '' }]]);
+    const mastery = new Map<string, number>([['attempted', 0.01]]);
     const result = buildTodaysReview(records, mastery, TODAY, []);
     expect(result[0]?.skillId).toBe('never-attempted');
   });
@@ -85,7 +85,7 @@ describe('buildTodaysReview', () => {
 
   it('puts real overdue reviews ahead of unattempted skills', () => {
     const records: ReviewRecord[] = [{ skillId: 'overdue', ease: 2.5, intervalDays: 1, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0 }];
-    const mastery = new Map<string, SkillMastery>([['overdue', { skillId: 'overdue', score: 80, attempts: 5, updatedAt: '' }]]);
+    const mastery = new Map<string, number>([['overdue', 0.8]]);
     const result = buildTodaysReview(records, mastery, TODAY, ['overdue', 'fresh']);
     expect(result.map((r) => r.skillId)).toEqual(['overdue', 'fresh']);
   });

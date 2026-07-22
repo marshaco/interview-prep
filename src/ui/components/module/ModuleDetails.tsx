@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getModule, getQuestion } from '../../../content/registry';
-import { masteryStars } from '../../../engine/mastery/mastery';
 import { storageAdapter } from '../../storageAdapter';
-import { StarRating } from '../common/StarRating';
-import type { Attempt, SkillMastery } from '../../../storage/types';
-import type { ModuleId, QuestionId, SkillId, StageType } from '../../../content/types';
+import type { Attempt } from '../../../storage/types';
+import type { ModuleId, QuestionId, StageType } from '../../../content/types';
 
 const STAGE_LINKS: Partial<Record<StageType, string>> = {
   learn: 'learn',
@@ -25,19 +23,17 @@ interface ModuleDetailsProps {
  * The stage/question list for one module — the shared guts of ModulePage
  * (a standalone route, for direct links/bookmarks) and RoadmapPage's
  * click-to-open sidebar (so browsing the roadmap never has to leave the
- * graph). Fetches its own mastery/attempts, same self-contained pattern
- * ModulePage always used.
+ * graph). Fetches its own attempts, same self-contained pattern ModulePage
+ * always used.
  */
 export function ModuleDetails({ moduleId }: ModuleDetailsProps) {
   const module = getModule(moduleId);
-  const [masteryBySkill, setMasteryBySkill] = useState<ReadonlyMap<SkillId, SkillMastery>>(new Map());
   const [attempts, setAttempts] = useState<Attempt[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([storageAdapter.getMastery(), storageAdapter.getAttempts()]).then(([mastery, allAttempts]) => {
+    void storageAdapter.getAttempts().then((allAttempts) => {
       if (cancelled) return;
-      setMasteryBySkill(new Map(mastery.map((record) => [record.skillId, record])));
       setAttempts(allAttempts);
     });
     return () => {
@@ -91,7 +87,7 @@ export function ModuleDetails({ moduleId }: ModuleDetailsProps) {
                 {questionItems.map((item) => {
                   const question = getQuestion(item.questionId);
                   if (!question) return null;
-                  const stars = masteryBySkill.get(question.skillIds[0] ?? '');
+                  const solved = isSolved(attempts, item.questionId);
                   return (
                     <li key={item.questionId}>
                       <Link
@@ -99,7 +95,7 @@ export function ModuleDetails({ moduleId }: ModuleDetailsProps) {
                         className="flex items-center justify-between rounded border border-border bg-bg-raised px-4 py-3 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <span>{question.title}</span>
-                        <StarRating stars={stars ? masteryStars(stars) : 0} />
+                        {solved && <span className="text-success">✓</span>}
                       </Link>
                     </li>
                   );
