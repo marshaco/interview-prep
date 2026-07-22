@@ -47,6 +47,17 @@ describe('DexieAdapter', () => {
     expect(appendOnly[0]?.id).toBe('a1');
   });
 
+  it('overwrites an attempt\'s tags without touching its other fields', async () => {
+    const adapter = freshAdapter();
+    await adapter.saveAttempt(fakeAttempt({ id: 'a1', code: 'def append(head, value): ...' }));
+
+    await adapter.updateAttemptTags('a1', ['off_by_one', 'syntax']);
+
+    const [attempt] = await adapter.getAttempts();
+    expect(attempt?.tags).toEqual(['off_by_one', 'syntax']);
+    expect(attempt?.code).toBe('def append(head, value): ...');
+  });
+
   it('round-trips a draft, overwriting on repeated saves for the same question', async () => {
     const adapter = freshAdapter();
     await adapter.saveDraft({ questionId: 'linked-list/append', code: 'v1', updatedAt: '2026-01-01T00:00:00.000Z' });

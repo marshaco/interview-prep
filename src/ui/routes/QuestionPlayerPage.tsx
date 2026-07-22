@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
@@ -28,14 +28,7 @@ export function QuestionPlayerPage() {
       player={player}
       backHref={`/modules/${question.moduleId}`}
       backLabel="Back to module"
-      headerRight={
-        <Link
-          to={`/interview/${question.id}`}
-          className="text-xs uppercase tracking-wide text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
-        >
-          Interview Mode →
-        </Link>
-      }
+      interviewHref={`/interview/${question.id}`}
     />
   );
 }

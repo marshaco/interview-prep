@@ -30,7 +30,17 @@ function RouteFallback() {
 
 function App() {
   useEffect(() => {
-    void pythonRunner.warmup();
+    // Idle prefetch (Triecode UI spec §10) — Pyodide's warmup is real work
+    // (fetches + instantiates the wasm runtime), so it's deferred off the
+    // critical rendering path rather than run synchronously at mount. Kept
+    // at the app root (not gated to Home specifically) so a deep link
+    // straight to a question still gets a warm worker — ARCHITECTURE §6.1's
+    // "warmup on app start" invariant holds regardless of entry route.
+    const schedule =
+      typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback : (cb: () => void) => setTimeout(cb, 200);
+    const cancel = typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback : clearTimeout;
+    const handle = schedule(() => void pythonRunner.warmup());
+    return () => cancel(handle);
   }, []);
 
   return (

@@ -82,11 +82,6 @@ export function ReviewPage() {
       player={player}
       backHref="/"
       backLabel="Home"
-      headerRight={
-        <span className="text-xs uppercase tracking-wide text-text-muted">
-          Review — {currentIndex + 1} of {queue.length}
-        </span>
-      }
       subHeader={
         <div className="border-b border-border bg-bg-inset px-4 py-2">
           <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-border">

@@ -1,5 +1,8 @@
 import type { ModuleId, QuestionId, Scorecard, SkillId } from '../content/types';
 
+/** One-tap post-fail self-tags (Triecode UI spec §10) — optional, added after the attempt already exists. */
+export type AttemptTag = 'edge_case' | 'off_by_one' | 'wrong_approach' | 'syntax';
+
 export interface Attempt {
   id: string;
   questionId: QuestionId;
@@ -8,6 +11,7 @@ export interface Attempt {
   hintsUsed: number;
   durationMs: number;
   createdAt: string; // ISO
+  tags?: AttemptTag[];
 }
 
 export interface AttemptQuery {

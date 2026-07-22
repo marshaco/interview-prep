@@ -8,6 +8,7 @@ import { storageAdapter } from '../storageAdapter';
 import type { RunResult } from '../../engine/runner/types';
 import type { Scorecard as ScorecardData } from '../../engine/grading/types';
 import type { CodeQuestion } from '../../content/types';
+import type { AttemptTag } from '../../storage/types';
 
 const RUN_TIMEOUT_MS = 8000;
 const DRAFT_AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -31,6 +32,8 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
   const [hintsRevealed, setHintsRevealed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [playerResult, setPlayerResult] = useState<PlayerResult | null>(null);
+  const [lastAttemptId, setLastAttemptId] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<AttemptTag[]>([]);
   const runCounterRef = useRef(0);
   // Starts at 0, not Date.now() — reading the clock is impure and refs can't
   // be written during render; the real value is set in the effect below.
@@ -45,6 +48,8 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     setIsDraftLoaded(false);
     setHintsRevealed(0);
     setPlayerResult(null);
+    setLastAttemptId(null);
+    setSelectedTags([]);
   }
 
   // Loading the draft is genuine async I/O (IndexedDB), so — unlike the
@@ -94,9 +99,10 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     if (!question) return;
     const now = new Date().toISOString();
     const durationMs = Date.now() - sessionStartRef.current;
+    const attemptId = crypto.randomUUID();
 
     await storageAdapter.saveAttempt({
-      id: crypto.randomUUID(),
+      id: attemptId,
       questionId: question.id,
       code,
       scorecard,
@@ -104,6 +110,8 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
       durationMs,
       createdAt: now,
     });
+    setLastAttemptId(attemptId);
+    setSelectedTags([]);
     // Local date, not now.slice(0, 10) (which is UTC) — a day's activity
     // must land on the user's actual calendar day for streaks to be honest.
     await storageAdapter.logActiveDay(localDateIso(new Date()));
@@ -153,6 +161,8 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     if (!question) return;
     setCode(question.starterCode);
     setPlayerResult(null);
+    setLastAttemptId(null);
+    setSelectedTags([]);
     // Persist immediately so navigating away and back doesn't silently
     // restore the pre-reset draft.
     void storageAdapter.saveDraft({
@@ -162,6 +172,14 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     });
   }
 
+  async function toggleTag(tag: AttemptTag) {
+    const next = selectedTags.includes(tag) ? selectedTags.filter((t) => t !== tag) : [...selectedTags, tag];
+    setSelectedTags(next);
+    if (lastAttemptId) {
+      await storageAdapter.updateAttemptTags(lastAttemptId, next);
+    }
+  }
+
   return {
     code,
     setCode,
@@ -169,6 +187,8 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     revealHint: () => setHintsRevealed((count) => Math.min(count + 1, question?.hints.length ?? 4)),
     isRunning,
     playerResult,
+    selectedTags,
+    toggleTag: (tag: AttemptTag) => void toggleTag(tag),
     run: () => execute('run'),
     submit: () => execute('submit'),
     reset,

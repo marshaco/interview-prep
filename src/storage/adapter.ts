@@ -1,9 +1,21 @@
 import type { ModuleId, QuestionId } from '../content/types';
-import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, LearnCompletion, Note, ReviewRecord } from './types';
+import type {
+  Attempt,
+  AttemptQuery,
+  AttemptTag,
+  Bookmark,
+  Draft,
+  ExportBundleV1,
+  LearnCompletion,
+  Note,
+  ReviewRecord,
+} from './types';
 
 export interface StorageAdapter {
   getAttempts(q?: AttemptQuery): Promise<Attempt[]>;
   saveAttempt(a: Attempt): Promise<void>;
+  /** Overwrites an existing attempt's self-tags (Triecode UI spec §10) — the attempt itself is otherwise immutable. */
+  updateAttemptTags(attemptId: string, tags: AttemptTag[]): Promise<void>;
   getDraft(questionId: QuestionId): Promise<Draft | null>;
   saveDraft(d: Draft): Promise<void>;
   getReviewRecords(): Promise<ReviewRecord[]>;

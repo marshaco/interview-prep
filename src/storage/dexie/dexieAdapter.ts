@@ -1,6 +1,16 @@
 import type { ModuleId, QuestionId } from '../../content/types';
 import type { StorageAdapter } from '../adapter';
-import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, LearnCompletion, Note, ReviewRecord } from '../types';
+import type {
+  Attempt,
+  AttemptQuery,
+  AttemptTag,
+  Bookmark,
+  Draft,
+  ExportBundleV1,
+  LearnCompletion,
+  Note,
+  ReviewRecord,
+} from '../types';
 import { applyImportBundle, buildExportBundle, validateExportBundle } from '../exchange';
 import { AppDatabase } from './db';
 
@@ -20,6 +30,10 @@ export class DexieAdapter implements StorageAdapter {
 
   async saveAttempt(a: Attempt): Promise<void> {
     await this.db.attempts.add(a);
+  }
+
+  async updateAttemptTags(attemptId: string, tags: AttemptTag[]): Promise<void> {
+    await this.db.attempts.update(attemptId, { tags });
   }
 
   async getDraft(questionId: QuestionId): Promise<Draft | null> {
