@@ -2,12 +2,13 @@ import type { AppDatabase } from './dexie/db';
 import type { ExportBundleV1 } from './types';
 
 export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1> {
-  const [attempts, drafts, reviewRecords, notes, bookmarks, dayLogRows] = await Promise.all([
+  const [attempts, drafts, reviewRecords, notes, bookmarks, learnCompletions, dayLogRows] = await Promise.all([
     db.attempts.toArray(),
     db.drafts.toArray(),
     db.reviewRecords.toArray(),
     db.notes.toArray(),
     db.bookmarks.toArray(),
+    db.learnCompletions.toArray(),
     db.dayLog.toArray(),
   ]);
 
@@ -20,6 +21,7 @@ export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1
       reviewRecords,
       notes,
       bookmarks,
+      learnCompletions,
       dayLog: dayLogRows.map((row) => row.date),
     },
   };
@@ -50,7 +52,7 @@ export function validateExportBundle(data: unknown): ExportBundleV1 {
 }
 
 export async function applyImportBundle(db: AppDatabase, bundle: ExportBundleV1): Promise<void> {
-  const tables = [db.attempts, db.drafts, db.reviewRecords, db.notes, db.bookmarks, db.dayLog];
+  const tables = [db.attempts, db.drafts, db.reviewRecords, db.notes, db.bookmarks, db.learnCompletions, db.dayLog];
   await db.transaction('rw', tables, async () => {
     await Promise.all(tables.map((table) => table.clear()));
     await Promise.all([
@@ -59,6 +61,8 @@ export async function applyImportBundle(db: AppDatabase, bundle: ExportBundleV1)
       db.reviewRecords.bulkAdd(bundle.tables.reviewRecords),
       db.notes.bulkAdd(bundle.tables.notes),
       db.bookmarks.bulkAdd(bundle.tables.bookmarks),
+      // Older exports predate learnCompletions — fall back to empty rather than throwing.
+      db.learnCompletions.bulkAdd(bundle.tables.learnCompletions ?? []),
       db.dayLog.bulkAdd(bundle.tables.dayLog.map((date) => ({ date }))),
     ]);
   });

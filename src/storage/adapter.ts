@@ -1,5 +1,5 @@
-import type { QuestionId } from '../content/types';
-import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, Note, ReviewRecord } from './types';
+import type { ModuleId, QuestionId } from '../content/types';
+import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, LearnCompletion, Note, ReviewRecord } from './types';
 
 export interface StorageAdapter {
   getAttempts(q?: AttemptQuery): Promise<Attempt[]>;
@@ -8,6 +8,9 @@ export interface StorageAdapter {
   saveDraft(d: Draft): Promise<void>;
   getReviewRecords(): Promise<ReviewRecord[]>;
   upsertReviewRecord(r: ReviewRecord): Promise<void>;
+  getLearnCompletions(): Promise<LearnCompletion[]>;
+  /** Idempotent — marking an already-complete module complete again is a no-op update, not an error. */
+  markLearnComplete(moduleId: ModuleId): Promise<void>;
   getNotes(questionId: QuestionId): Promise<Note[]>;
   saveNote(n: Note): Promise<void>;
   getBookmarks(): Promise<Bookmark[]>;

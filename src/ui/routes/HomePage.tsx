@@ -1,0 +1,262 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { modules, questions } from '../../content/registry';
+import { computeModuleDepths } from '../../engine/roadmap/dag';
+import { selectNextAction, type NextAction } from '../../engine/nextAction/selectNextAction';
+import { computeModuleMastery } from '../../engine/mastery/mastery';
+import { countSolvedThisWeek, countTotalMastered } from '../../engine/stats/homeStats';
+import { currentStreak, localDateIso } from '../../engine/srs/streaks';
+import { storageAdapter } from '../storageAdapter';
+import { AppShell } from '../components/shell/AppShell';
+import { ProgressRing } from '../components/common/ProgressRing';
+import { StreakCalendar } from '../components/common/StreakCalendar';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import type { ModuleId, RoadmapModule } from '../../content/types';
+import type { Attempt, ReviewRecord } from '../../storage/types';
+
+const MIN_DAYS_FOR_HEATMAP = 7;
+const CARD_WIDTH = 200;
+
+interface HomeData {
+  attempts: Attempt[];
+  dayLog: string[];
+  reviewRecords: ReviewRecord[];
+  learnCompletions: Set<ModuleId>;
+}
+
+function moduleQuestionIds(module: RoadmapModule): string[] {
+  return module.stages.flatMap((stage) => stage.items.filter((item) => item.type === 'question').map((item) => item.questionId));
+}
+
+function isGhostModule(module: RoadmapModule): boolean {
+  return module.stages.every((stage) => stage.items.length === 0);
+}
+
+function heroCopy(nextAction: NextAction): { text: string; href: string } {
+  switch (nextAction.kind) {
+    case 'review':
+      return { text: `${nextAction.dueCount} review${nextAction.dueCount === 1 ? '' : 's'} due — Start review →`, href: '/review' };
+    case 'learn':
+      return { text: `Continue: ${nextAction.moduleTitle} — Learn →`, href: nextAction.href };
+    case 'exercise':
+      return { text: `Continue: ${nextAction.moduleTitle} — ${nextAction.questionTitle} →`, href: nextAction.href };
+    case 'none':
+      return { text: "You're caught up on everything available — nice work.", href: '/' };
+  }
+}
+
+/** Real DOM anchor positions for the module cards, so the SVG edge overlay lines up with wherever flex-wrap actually put each card. */
+function useCardPositions(ids: string[], ready: boolean) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef(new Map<string, HTMLElement>());
+  const callbackCache = useRef(new Map<string, (el: HTMLElement | null) => void>());
+  const [positions, setPositions] = useState<Map<string, { x: number; y: number; width: number; height: number }>>(new Map());
+
+  // Memoized per-id so the ref identity is stable across renders — an inline
+  // `(el) => ...` would make React detach/reattach on every render.
+  function setCardRef(id: string) {
+    let cb = callbackCache.current.get(id);
+    if (!cb) {
+      cb = (el: HTMLElement | null) => {
+        if (el) cardRefs.current.set(id, el);
+        else cardRefs.current.delete(id);
+      };
+      callbackCache.current.set(id, cb);
+    }
+    return cb;
+  }
+
+  useLayoutEffect(() => {
+    function measure() {
+      const container = containerRef.current;
+      if (!container) return;
+      const containerRect = container.getBoundingClientRect();
+      const next = new Map<string, { x: number; y: number; width: number; height: number }>();
+      for (const id of ids) {
+        const el = cardRefs.current.get(id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        next.set(id, {
+          x: rect.left - containerRect.left,
+          y: rect.top - containerRect.top,
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+      setPositions(next);
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+    // `ready` flips false -> true exactly once, after data loads and the real
+    // cards (and their refs) exist in the DOM — that's what re-triggers measurement.
+  }, [ids, ready]);
+
+  return { containerRef, setCardRef, positions };
+}
+
+export function HomePage() {
+  useDocumentTitle('Home');
+  const [data, setData] = useState<HomeData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([
+      storageAdapter.getAttempts(),
+      storageAdapter.getDayLog(),
+      storageAdapter.getReviewRecords(),
+      storageAdapter.getLearnCompletions(),
+    ]).then(([attempts, dayLog, reviewRecords, learnCompletions]) => {
+      if (cancelled) return;
+      setData({ attempts, dayLog, reviewRecords, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)) });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const depths = useMemo(() => computeModuleDepths(modules), []);
+  const tiers = useMemo(() => {
+    const maxDepth = Math.max(0, ...modules.map((m) => depths.get(m.id) ?? 0));
+    const rows: RoadmapModule[][] = Array.from({ length: maxDepth + 1 }, () => []);
+    for (const module of modules) rows[depths.get(module.id) ?? 0]?.push(module);
+    return rows;
+  }, [depths]);
+
+  const edges = useMemo(
+    () => modules.flatMap((module) => module.prerequisites.map((prereqId) => ({ source: prereqId, target: module.id }))),
+    [],
+  );
+
+  const allModuleIds = useMemo(() => modules.map((m) => m.id), []);
+  const { containerRef, setCardRef, positions } = useCardPositions(allModuleIds, data !== null);
+
+  if (!data) {
+    return (
+      <AppShell>
+        <p className="text-text-muted">Loading…</p>
+      </AppShell>
+    );
+  }
+
+  const today = localDateIso(new Date());
+  const nextAction = selectNextAction({
+    modules,
+    questions,
+    attempts: data.attempts,
+    reviewRecords: data.reviewRecords,
+    learnCompletions: data.learnCompletions,
+    todayIso: today,
+  });
+  const frontierModuleId = nextAction.kind === 'exercise' || nextAction.kind === 'learn' ? nextAction.moduleId : null;
+  const hero = heroCopy(nextAction);
+
+  const streak = currentStreak(data.dayLog, today);
+  const solvedThisWeek = countSolvedThisWeek(data.attempts, new Date().toISOString());
+  const totalMastered = countTotalMastered(data.attempts);
+  const showHeatmap = data.dayLog.length >= MIN_DAYS_FOR_HEATMAP;
+
+  return (
+    <AppShell>
+      <Link
+        to={hero.href}
+        className="mb-6 block rounded-lg border border-border bg-bg-elevated px-6 py-5 transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <p className="text-lg font-semibold text-accent">{hero.text}</p>
+      </Link>
+
+      <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
+        <span>
+          <span className="font-semibold text-text">{streak}</span> day streak
+        </span>
+        <span>
+          <span className="font-semibold text-text">{solvedThisWeek}</span> solved this week
+        </span>
+        <span>
+          <span className="font-semibold text-text">{totalMastered}</span> mastered
+        </span>
+      </div>
+
+      {showHeatmap && (
+        <div className="mb-8">
+          <StreakCalendar dayLog={data.dayLog} today={new Date()} />
+        </div>
+      )}
+
+      <p className="mb-4 text-xs text-text-muted">Suggested path — everything is open.</p>
+
+      <div ref={containerRef} className="relative flex flex-col gap-10">
+        <svg className="pointer-events-none absolute inset-0 hidden md:block" width="100%" height="100%">
+          {edges.map(({ source, target }) => {
+            const s = positions.get(source);
+            const t = positions.get(target);
+            if (!s || !t) return null;
+            const x1 = s.x + s.width / 2;
+            const y1 = s.y + s.height;
+            const x2 = t.x + t.width / 2;
+            const y2 = t.y;
+            const midY = (y1 + y2) / 2;
+            return (
+              <path
+                key={`${source}->${target}`}
+                d={`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`}
+                stroke="var(--color-border-strong)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+            );
+          })}
+        </svg>
+
+        {tiers.map((tierModules, tierIndex) => (
+          <div key={tierIndex} className="flex flex-wrap gap-4">
+            {tierModules.map((module) => {
+              const isGhost = isGhostModule(module);
+              const isDataStructure = module.kind === 'data_structure';
+              const categoryBorder = isDataStructure ? 'border-accent/40' : 'border-accent-secondary/40';
+              const categoryText = isDataStructure ? 'text-accent' : 'text-accent-secondary';
+              const isFrontier = module.id === frontierModuleId;
+              const questionIds = moduleQuestionIds(module);
+              const solvedCount = questionIds.filter((id) => data.attempts.some((a) => a.questionId === id && a.scorecard.overall === 100)).length;
+              const progress = computeModuleMastery(module, data.attempts, data.learnCompletions.has(module.id));
+
+              if (isGhost) {
+                return (
+                  <div
+                    key={module.id}
+                    ref={setCardRef(module.id)}
+                    style={{ width: CARD_WIDTH }}
+                    className="rounded-lg border border-dashed border-border px-3 py-2.5 opacity-50"
+                  >
+                    <p className="truncate text-sm font-medium text-text-muted">{module.title}</p>
+                    <p className="text-xs text-text-muted">In development</p>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={module.id}
+                  to={`/modules/${module.id}`}
+                  ref={setCardRef(module.id)}
+                  style={{ width: CARD_WIDTH }}
+                  className={`flex items-center gap-3 rounded-lg border bg-bg-raised px-3 py-2.5 transition-colors duration-200 ease-out-motion hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    isFrontier ? 'border-accent' : `${categoryBorder}`
+                  }`}
+                >
+                  <ProgressRing progress={progress} size="sm" isFrontier={isFrontier} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text">{module.title}</p>
+                    <p className={`text-xs ${categoryText}`}>
+                      {solvedCount} of {questionIds.length}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </AppShell>
+  );
+}

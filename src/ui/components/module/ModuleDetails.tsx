@@ -20,11 +20,9 @@ interface ModuleDetailsProps {
 }
 
 /**
- * The stage/question list for one module — the shared guts of ModulePage
- * (a standalone route, for direct links/bookmarks) and RoadmapPage's
- * click-to-open sidebar (so browsing the roadmap never has to leave the
- * graph). Fetches its own attempts, same self-contained pattern ModulePage
- * always used.
+ * The stage/question list for the Module page (/module/:id). Fetches its
+ * own attempts. Due for the stepper rewrite (Triecode UI spec §6) — this is
+ * still the flat pre-stepper list for now.
  */
 export function ModuleDetails({ moduleId }: ModuleDetailsProps) {
   const module = getModule(moduleId);

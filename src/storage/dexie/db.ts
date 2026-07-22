@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Attempt, Bookmark, Draft, Note, ReviewRecord } from '../types';
+import type { Attempt, Bookmark, Draft, LearnCompletion, Note, ReviewRecord } from '../types';
 
 // dayLog rows are wrapped in an object (rather than storing the bare ISO
 // date string) so every table uniformly stores objects with a keyPath —
@@ -14,6 +14,7 @@ export class AppDatabase extends Dexie {
   reviewRecords!: Table<ReviewRecord, string>;
   notes!: Table<Note, string>;
   bookmarks!: Table<Bookmark, string>;
+  learnCompletions!: Table<LearnCompletion, string>;
   dayLog!: Table<DayLogRow, string>;
 
   constructor(name = 'interview-prep') {
@@ -31,6 +32,12 @@ export class AppDatabase extends Dexie {
     // not stored state — the per-skill EWMA table it replaced is dropped.
     this.version(2).stores({
       mastery: null,
+    });
+    // v3: one row per module whose Learn stage has been explicitly marked
+    // complete (Triecode UI spec §9) — feeds selectNextAction and the
+    // module stepper's frontier logic.
+    this.version(3).stores({
+      learnCompletions: 'moduleId',
     });
   }
 }

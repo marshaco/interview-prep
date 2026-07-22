@@ -1,6 +1,6 @@
-import type { QuestionId } from '../../content/types';
+import type { ModuleId, QuestionId } from '../../content/types';
 import type { StorageAdapter } from '../adapter';
-import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, Note, ReviewRecord } from '../types';
+import type { Attempt, AttemptQuery, Bookmark, Draft, ExportBundleV1, LearnCompletion, Note, ReviewRecord } from '../types';
 import { applyImportBundle, buildExportBundle, validateExportBundle } from '../exchange';
 import { AppDatabase } from './db';
 
@@ -37,6 +37,14 @@ export class DexieAdapter implements StorageAdapter {
 
   async upsertReviewRecord(r: ReviewRecord): Promise<void> {
     await this.db.reviewRecords.put(r);
+  }
+
+  async getLearnCompletions(): Promise<LearnCompletion[]> {
+    return this.db.learnCompletions.toArray();
+  }
+
+  async markLearnComplete(moduleId: ModuleId): Promise<void> {
+    await this.db.learnCompletions.put({ moduleId, completedAt: new Date().toISOString() });
   }
 
   async getNotes(questionId: QuestionId): Promise<Note[]> {
@@ -85,6 +93,7 @@ export class DexieAdapter implements StorageAdapter {
       this.db.reviewRecords,
       this.db.notes,
       this.db.bookmarks,
+      this.db.learnCompletions,
       this.db.dayLog,
     ];
     await this.db.transaction('rw', tables, async () => {

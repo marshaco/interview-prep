@@ -1,4 +1,4 @@
-import type { QuestionId, Scorecard, SkillId } from '../content/types';
+import type { ModuleId, QuestionId, Scorecard, SkillId } from '../content/types';
 
 export interface Attempt {
   id: string;
@@ -40,6 +40,16 @@ export interface Bookmark {
   createdAt: string; // ISO
 }
 
+/**
+ * A Learn stage marked complete via the "Mark Learn complete" event
+ * (Triecode UI spec §9) — the one explicit completion action in the app;
+ * every other stage's completion is inferred from passing exercises.
+ */
+export interface LearnCompletion {
+  moduleId: ModuleId;
+  completedAt: string; // ISO
+}
+
 export interface ExportBundleV1 {
   schemaVersion: 1;
   exportedAt: string; // ISO
@@ -49,6 +59,7 @@ export interface ExportBundleV1 {
     reviewRecords: ReviewRecord[];
     notes: Note[];
     bookmarks: Bookmark[];
+    learnCompletions: LearnCompletion[];
     dayLog: string[]; // ISO date strings, one per active day
   };
 }

@@ -68,6 +68,17 @@ describe('DexieAdapter', () => {
     expect(await adapter.getBookmarks()).toHaveLength(0);
   });
 
+  it('marks a Learn stage complete idempotently', async () => {
+    const adapter = freshAdapter();
+    expect(await adapter.getLearnCompletions()).toEqual([]);
+
+    await adapter.markLearnComplete('linked-list');
+    await adapter.markLearnComplete('linked-list'); // idempotent re-mark
+    const completions = await adapter.getLearnCompletions();
+    expect(completions).toHaveLength(1);
+    expect(completions[0]?.moduleId).toBe('linked-list');
+  });
+
   it('logs active days and returns the day log', async () => {
     const adapter = freshAdapter();
     await adapter.logActiveDay('2026-01-01');
@@ -83,6 +94,7 @@ describe('DexieAdapter', () => {
     await adapter.upsertReviewRecord({ skillId: 'linked-list/append', ease: 2.5, intervalDays: 3, dueAt: '2026-01-05T00:00:00.000Z', lapses: 0 });
     await adapter.saveNote({ id: 'n1', questionId: 'linked-list/append', body: 'note', createdAt: '2026-01-01T00:00:00.000Z' });
     await adapter.toggleBookmark('linked-list/append');
+    await adapter.markLearnComplete('linked-list');
     await adapter.logActiveDay('2026-01-01');
 
     const bundle = await adapter.exportAll();
@@ -99,6 +111,7 @@ describe('DexieAdapter', () => {
     expect(await adapter.getReviewRecords()).toHaveLength(1);
     expect(await adapter.getNotes('linked-list/append')).toHaveLength(1);
     expect(await adapter.getBookmarks()).toHaveLength(1);
+    expect(await adapter.getLearnCompletions()).toHaveLength(1);
     expect(await adapter.getDayLog()).toEqual(['2026-01-01']);
   });
 

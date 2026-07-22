@@ -1,12 +1,12 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { CommandPalette } from './ui/components/common/CommandPalette';
 import { pythonRunner } from './ui/pythonRunner';
 
-// Route-level code splitting (ARCHITECTURE §10 / Phase 8 DoD): Monaco and
-// React Flow are each pulled into only the routes that actually render them,
-// instead of every route eagerly shipping both.
-const RoadmapPage = lazy(() => import('./ui/routes/RoadmapPage').then((m) => ({ default: m.RoadmapPage })));
+// Route-level code splitting: Monaco is pulled into only the routes that
+// actually render it, instead of every route eagerly shipping it. React
+// Flow is gone entirely (Home's tiered map is a static grid + SVG overlay).
+const HomePage = lazy(() => import('./ui/routes/HomePage').then((m) => ({ default: m.HomePage })));
 const ModulePage = lazy(() => import('./ui/routes/ModulePage').then((m) => ({ default: m.ModulePage })));
 const QuestionPlayerPage = lazy(() =>
   import('./ui/routes/QuestionPlayerPage').then((m) => ({ default: m.QuestionPlayerPage })),
@@ -18,7 +18,6 @@ const LearnPage = lazy(() => import('./ui/routes/LearnPage').then((m) => ({ defa
 const GuidedSequencePage = lazy(() =>
   import('./ui/routes/GuidedSequencePage').then((m) => ({ default: m.GuidedSequencePage })),
 );
-const DashboardPage = lazy(() => import('./ui/routes/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const ReviewPage = lazy(() => import('./ui/routes/ReviewPage').then((m) => ({ default: m.ReviewPage })));
 
 function RouteFallback() {
@@ -39,11 +38,13 @@ function App() {
       <CommandPalette />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<RoadmapPage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/modules/:moduleId" element={<ModulePage />} />
           <Route path="/modules/:moduleId/learn" element={<LearnPage />} />
           <Route path="/modules/:moduleId/:stageSlug/:stepNumber" element={<GuidedSequencePage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          {/* Roadmap and Dashboard are merged into Home (Triecode UI spec §5/§3). */}
+          <Route path="/roadmap" element={<Navigate to="/" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/review" element={<ReviewPage />} />
           {/* Splat, not :questionId — question ids are namespaced like "linked-list/append"
               and contain a literal slash, which a single dynamic segment can't match. */}
