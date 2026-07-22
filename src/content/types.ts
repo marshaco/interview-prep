@@ -164,11 +164,23 @@ export interface SequenceDiagramSpec {
   caption?: string;
 }
 
+/**
+ * A lesson figure the learner can manipulate instead of just reading (Triecode
+ * UI spec §9) — local component state, never touches user code or storage.
+ * `kind` selects the renderer in ui/components/viz/InteractiveFigure.tsx, the
+ * same "kind doubles as renderer selector" pattern VisualizationBinding uses:
+ * a new figure adds a new `kind` value and a new renderer, nothing else.
+ */
+export interface InteractiveFigureBinding {
+  kind: 'stack_push_pop';
+}
+
 export interface LessonSection {
   id: string;
   title: string;
   body: string; // markdown
   diagram?: SequenceDiagramSpec;
+  interactiveFigure?: InteractiveFigureBinding;
 }
 
 export type StageItem = { type: 'lesson'; lesson: LessonSection } | { type: 'question'; questionId: QuestionId };

@@ -3,11 +3,7 @@ import type { LessonSection } from '../../../types';
 export const whatIsAStack: LessonSection = {
   id: 'stack/lesson/what-is-a-stack',
   title: 'What is a stack?',
-  diagram: {
-    nodes: [{ value: 1 }, { value: 2 }, { value: 3, label: 'top', highlight: true }],
-    connected: false,
-    caption: 'A stack, drawn left-to-right in push order: only the top (most recently pushed) is reachable.',
-  },
+  interactiveFigure: { kind: 'stack_push_pop' },
   body: `## What is a stack?
 
 A stack is a collection where the only thing you can add or remove is
