@@ -39,4 +39,30 @@ describe('highlightPython', () => {
     expect(classesFor('compute', tokens)[0]).toContain('#dcdcaa');
     expect(classesFor('value', tokens)[0]).toBe('');
   });
+
+  it('colors a class name after the class keyword', () => {
+    const tokens = highlightPython('class ListNode:\n    pass');
+    expect(classesFor('ListNode', tokens)[0]).toContain('#4ec9b0');
+  });
+
+  it('colors parameter names, including self, but not their default values', () => {
+    const tokens = highlightPython('def __init__(self, val=0, next=None):\n    pass');
+    expect(classesFor('self', tokens)[0]).toContain('#9cdcfe');
+    expect(classesFor('val', tokens)[0]).toContain('#9cdcfe');
+    expect(classesFor('next', tokens)[0]).toContain('#9cdcfe');
+    // Defaults are a number (already covered) and the None keyword — neither
+    // should pick up the parameter color.
+    expect(classesFor('None', tokens)[0]).toContain('#569cd6');
+  });
+
+  it('colors a parameter reference in the body, but not the attribute it is assigned to', () => {
+    const tokens = highlightPython('def __init__(self, val):\n    self.val = val');
+    const dotVal = classesFor('val', tokens);
+    // First 'val' occurrence is the parameter (signature); the last is the
+    // right-hand-side reference — both parameter-blue. The attribute name
+    // right after `self.` must stay uncolored (plain, like real VS Code).
+    expect(dotVal[0]).toContain('#9cdcfe'); // signature parameter
+    expect(dotVal[dotVal.length - 1]).toContain('#9cdcfe'); // `= val` reference
+    expect(dotVal.some((c) => c === '')).toBe(true); // the `self.val` attribute itself
+  });
 });
