@@ -3,6 +3,7 @@ import { getModule, getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
 import { EmptyState } from '../components/common/EmptyState';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { StageType } from '../../content/types';
 
 const STAGE_TYPE_BY_SLUG: Record<string, StageType> = {
@@ -21,6 +22,7 @@ export function GuidedSequencePage() {
   const stepIndex = Number(stepNumber) - 1; // 1-indexed in the URL
   const questionId = questionIds[stepIndex];
   const question = questionId ? getQuestion(questionId) : undefined;
+  useDocumentTitle(question ? `${question.title}` : stage?.title ?? 'Guided step');
 
   const player = useQuestionPlayer(question);
 

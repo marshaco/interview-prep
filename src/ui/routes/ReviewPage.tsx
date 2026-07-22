@@ -8,11 +8,13 @@ import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
 import { AppShell } from '../components/shell/AppShell';
 import { EmptyState } from '../components/common/EmptyState';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { CodeQuestion } from '../../content/types';
 
 const skillById = new Map(modules.flatMap((m) => m.skills).map((s) => [s.id, s]));
 
 export function ReviewPage() {
+  useDocumentTitle('Review');
   const [queue, setQueue] = useState<DueReviewItem[] | null>(null);
   const [picks, setPicks] = useState<(CodeQuestion | null)[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);

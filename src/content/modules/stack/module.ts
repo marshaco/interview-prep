@@ -19,7 +19,7 @@ export const stackModule: RoadmapModule = {
   id: 'stack',
   kind: 'data_structure',
   title: 'Stack',
-  summary: 'Build a stack from scratch, then drill the LIFO application problems it unlocks.',
+  summary: 'Build a stack from scratch, then drill the LIFO application problems it enables.',
   prerequisites: ['arrays-hashing'],
   skills: stackSkills,
   stages: [

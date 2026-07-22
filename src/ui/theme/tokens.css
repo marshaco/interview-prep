@@ -51,13 +51,3 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
 }
-
-/* React Flow's default attribution link color (#999 on its #353535 badge
-   background) falls just under WCAG AA (4.3:1, needs 4.5:1). Required
-   attribution stays — per xyflow's license, only its Pro tier may hide it —
-   this only raises the link's own contrast. !important because
-   @xyflow/react/dist/style.css loads in RoadmapPage's own lazy-loaded chunk,
-   so plain source order can't guarantee this rule wins the cascade. */
-.react-flow__attribution a {
-  color: #b8bcc4 !important;
-}

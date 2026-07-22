@@ -62,7 +62,7 @@ class Stack:
 \`\`\`
 
 This is exactly \`prepend\`/\`delete-the-head\` from the Linked List module —
-a stack is a linked list where you've locked yourself into only ever
+a stack is a linked list where you've restricted yourself to only ever
 touching the head. Both representations give identical *observable*
 behavior; the grading in this module checks behavior, not which one you
 picked. Real interview settings almost always accept either — reach for

@@ -4,6 +4,7 @@ import { getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
 import { EmptyState } from '../components/common/EmptyState';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -16,6 +17,7 @@ export function InterviewQuestionPage() {
   const params = useParams<{ '*': string }>();
   const questionId = params['*'];
   const question = questionId ? getQuestion(questionId) : undefined;
+  useDocumentTitle(question ? `${question.title}: Interview` : 'Interview');
 
   const player = useQuestionPlayer(question);
 

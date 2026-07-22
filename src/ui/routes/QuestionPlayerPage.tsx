@@ -3,11 +3,13 @@ import { getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
 import { EmptyState } from '../components/common/EmptyState';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export function QuestionPlayerPage() {
   const params = useParams<{ '*': string }>();
   const questionId = params['*'];
   const question = questionId ? getQuestion(questionId) : undefined;
+  useDocumentTitle(question?.title ?? 'Question');
 
   const player = useQuestionPlayer(question);
 
