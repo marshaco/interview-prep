@@ -1,8 +1,12 @@
 # CLAUDE.md
 
-Personal interview-prep tool: learn to implement data structures and algorithmic
-patterns from memory, with in-browser Python grading. Static client-only SPA —
-no server, no accounts. Full design in `ARCHITECTURE.md` (read it before any work).
+**Triecode** — a personal interview-prep tool: learn to implement data structures
+and algorithmic patterns from memory, with in-browser Python grading. Static
+client-only SPA — no server, no accounts. Full design in `ARCHITECTURE.md`
+(read it before any work), including its §10 "UI System" section — the current
+source of truth for shells, tokens, `ProgressRing`, the `selectNextAction` seam,
+and the mastery formula, all introduced by the Triecode UI overhaul (see the
+note after the Phases list below).
 
 The curriculum is an 18-module roadmap DAG split into two categories
 (ARCHITECTURE.md §4.1): **Data Structures** (`kind: 'data_structure'` — build
@@ -41,9 +45,12 @@ each kind (Linked List, Arrays & Hashing); all 18 nodes ship as data.
 
 ## Stack
 
-Vite · React 18 · TypeScript (strict) · TailwindCSS · React Router · Zustand ·
-Monaco (`@monaco-editor/react`) · React Flow (`@xyflow/react`) · Pyodide (Web
-Worker) · Dexie · Vitest + Testing Library.
+Vite · React 18 · TypeScript (strict) · TailwindCSS · React Router ·
+Monaco (`@monaco-editor/react`) · Pyodide (Web Worker) · Dexie · Vitest +
+Testing Library. (React Flow was removed by the Triecode UI overhaul — see
+ARCHITECTURE.md §2's decision record and §10.3; Zustand was never actually
+adopted — there's no global client state that isn't already either component
+state or `StorageAdapter`-backed.)
 
 ## Commands
 
@@ -139,5 +146,28 @@ frame-by-frame; interview mode records timed attempts.
 
 ### Phase 8 — Polish
 Command palette (⌘K), transitions (150–200 ms ease-out), empty/error states,
-a11y pass, performance pass (bundle split Monaco/Pyodide/React Flow).
-**DoD:** Lighthouse a11y ≥ 95; no route ships all three heavy deps eagerly.
+a11y pass, performance pass (bundle split Monaco/Pyodide).
+**DoD:** Lighthouse a11y ≥ 95; no route ships all heavy deps eagerly.
+
+---
+
+**Note — Triecode UI overhaul:** a later, separately-specified UI overhaul
+(commit sequence in the project history; see ARCHITECTURE.md §10 for the
+resulting design) superseded parts of the phase descriptions above rather
+than following them literally:
+
+- Phase 4/5's separate Roadmap and Dashboard pages were merged into one
+  **Home** page; React Flow (Phase 4, Phase 8) was removed entirely in favor
+  of a static tiered grid + SVG overlay.
+- Phase 8's command palette (⌘K) and empty-state components landed early,
+  bundled into the overhaul rather than waiting for a dedicated Phase 8 pass.
+  Phase 8's a11y pass, remaining error states, and the Monaco/Pyodide
+  bundle-split performance pass are **not** covered by the overhaul and are
+  still open.
+- The per-skill EWMA mastery model described in Phase 2/§7.2 (original) was
+  replaced by a pure attempt-history formula — see ARCHITECTURE.md §7.2's
+  current text, not the phase description above, for the live design.
+
+Treat the phase list above as the historical record of what was originally
+scoped; treat ARCHITECTURE.md as the live description of what the app
+actually does today.

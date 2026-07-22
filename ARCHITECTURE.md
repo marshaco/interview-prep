@@ -32,7 +32,7 @@ If both kinds work end-to-end, every remaining roadmap node is a content problem
 | Build/app framework | **Vite + React 18 + TypeScript (strict)** | Pure SPA; no server rendering needed. Faster iteration than Next.js for this shape. |
 | Styling | **TailwindCSS** | Design-token driven dark theme; matches the Linear/Raycast aesthetic goal. |
 | Code editor | **Monaco** via `@monaco-editor/react` | VS Code feel, Python syntax, keybindings. |
-| Roadmap graph | **React Flow** (`@xyflow/react`) | Interactive DAG with custom nodes showing progress rings. |
+| Curriculum map | **Static CSS grid + SVG overlay** (no dependency) | 18 nodes in a fixed DAG never need pan/zoom/minimap — a tiered grid (rows = prerequisite depth) with an SVG overlay drawing edges between measured card positions covers it with zero graph-library weight. |
 | Python execution | **Pyodide in a Web Worker** | Off-main-thread; killable; behind a `PythonRunner` interface for later server swap. |
 | Local persistence | **Dexie (IndexedDB)** | Structured tables, indexes, migrations, comfortable size limits (localStorage is not viable for submission history). |
 | App state | **Zustand** | Minimal global state (session, settings, review queue). Server-cache libraries (React Query) are unnecessary with no server. |
@@ -42,6 +42,8 @@ If both kinds work end-to-end, every remaining roadmap node is a content problem
 **Decision record — why not Next.js:** nothing here needs SSR, API routes, or file-based data fetching. Vite gives faster HMR and a simpler mental model. If we later add a backend, it will be a separate concern (Supabase or a small API), not a reason to re-platform the client. Reversible decision; the React code is portable.
 
 **Decision record — why not localStorage:** 5–10 MB soft cap, synchronous API, string-only values. Submission history plus drafts plus content cache will exceed it. Dexie also gives us versioned schema migrations, which we will genuinely use.
+
+**Decision record — dropping React Flow (Triecode UI overhaul):** the roadmap is a fixed 18-node DAG, never user-editable, never panned or zoomed in practice — a full graph-visualization library was solving a problem V1 didn't have. Replaced with a static tiered CSS grid plus a small SVG overlay (§10); net dependency count goes down, one fewer thing to theme and keep accessible.
 
 ---
 
@@ -251,8 +253,12 @@ src/
 │   │   └── comparators.ts        # deepEqual, unorderedEqual, floatClose, structureShape
 │   ├── srs/
 │   │   └── scheduler.ts          # SM-2-lite: review(record, outcome) -> record
-│   └── mastery/
-│       └── mastery.ts            # attempts -> per-skill stars
+│   ├── mastery/
+│   │   └── mastery.ts            # attempts -> exercise/module/skill scores (§7.2)
+│   ├── roadmap/
+│   │   └── dag.ts                # computeModuleDepths, orderModulesByDag (§10.3, §10.5)
+│   └── nextAction/
+│       └── selectNextAction.ts   # ProgressSnapshot -> NextAction (§10.5)
 ├── storage/
 │   ├── adapter.ts                # StorageAdapter interface
 │   ├── dexie/
@@ -262,14 +268,16 @@ src/
 ├── workers/
 │   └── pyodide.worker.ts
 ├── ui/
-│   ├── routes/                   # Roadmap, Module, Stage, Question, Dashboard, Review, Settings
+│   ├── routes/                   # Home, Module, Learn, Question player, Guided sequence,
+│   │                              # Interview, Review (Settings not yet built)
 │   ├── components/
-│   │   ├── editor/               # Monaco wrapper, run/submit/reset/draft toolbar
-│   │   ├── roadmap/              # React Flow nodes with progress rings
-│   │   ├── question/             # prompt pane, hints ladder, scorecard
-│   │   ├── viz/                  # visualization renderers (§9)
-│   │   └── common/
-│   ├── stores/                   # zustand: session, settings, reviewQueue
+│   │   ├── shell/                 # AppShell, FocusShell (§10.1)
+│   │   ├── editor/                 # Monaco wrapper, run/submit/reset/draft toolbar
+│   │   ├── module/                 # ModuleStepper (§10.4)
+│   │   ├── question/               # prompt pane, hints ladder, scorecard, player layout
+│   │   ├── viz/                    # visualization renderers (§9) + InteractiveFigure
+│   │   └── common/                 # ProgressRing, EmptyState, CommandPalette, ...
+│   ├── hooks/                     # useQuestionPlayer, useDocumentTitle
 │   └── theme/                    # tokens: colors, type scale, spacing, motion
 ├── App.tsx
 └── main.tsx
@@ -379,15 +387,22 @@ Hidden-group failures show *that* a hidden case failed and a category label ("em
 
 Every Submit produces one immutable `Attempt` (code snapshot, scorecard, duration, hints used). Attempts fan out into two derived records per touched skill: mastery and the review schedule. Runs (as opposed to Submits) execute visible tests only and are not recorded.
 
-### 7.2 Mastery (per skill, 0–5 stars)
+### 7.2 Mastery (per exercise, per module, per skill — pure function over attempt history)
 
-```
-score' = 0.7 · attemptScore + 0.3 · score        (EWMA, recent-weighted)
-stars  = floor(score' / 20), capped by evidence:
-         < 2 attempts → max 3★ ; hints 3–4 used → attempt capped at 60
+**Superseded (Triecode UI overhaul):** the original design stored an incrementally-updated per-skill EWMA (`SkillMastery`, 0–5 stars) in its own Dexie table. That table and the `getMastery`/`upsertMastery` adapter methods are gone. Mastery is now computed fresh from `Attempt` history every time it's needed — nothing is stored, so there is no incremental-update bug class and no migration cost when the formula changes (Phase 5's time-decay can slot into `computeExerciseScore` without any consumer changing).
+
+```ts
+// engine/mastery/mastery.ts
+export function computeExerciseScore(attempts: Attempt[]): number
+export function computeModuleMastery(module: RoadmapModule, attempts: Attempt[], isLearnComplete: boolean): number
+export function computeSkillScore(skillId: SkillId, questions: CodeQuestion[], attempts: Attempt[]): number
 ```
 
-Stored as a raw 0–100 float; stars are a display function. The dashboard's "weakest topics" is simply skills sorted ascending by score with ≥1 attempt.
+- **Exercise score** — walk a question's attempts in order until the first Submit that scores 100 (overall). If none ever did, score is `0`. Otherwise: start at `1.0`, multiply by `0.85` per hint revealed before that pass, multiply by `0.9` per failed Submit before that pass, floor the result at `0.4` (a clean-eventual pass is never worth nothing). A clean first-submit, no-hints pass scores exactly `1.0`.
+- **Module mastery** — the mean of every exercise's score across the module, all weighted equally regardless of stage. If the module has a non-empty Learn stage, "has this Learn stage been marked complete" contributes one more exercise-equivalent (`1` or `0`) to that same mean — this is why `computeModuleMastery` also takes `isLearnComplete`, sourced from the `learnCompletions` table (§8), not from attempts.
+- **Skill score** — the mean exercise score across every question tagged with that skill. This is what feeds `buildTodaysReview`'s priority sort (§7.3) now, replacing the old stored `SkillMastery.score`.
+
+`ProgressRing` (§10) renders `computeModuleMastery`'s 0–1 output directly as a percentage — never raw solved/total — so a module with 8 easy passes and 2 hint-heavy near-misses reads differently from one with 10 clean passes, even at the same solved count.
 
 ### 7.3 Spaced repetition (SM-2-lite, per skill)
 
@@ -404,7 +419,7 @@ export interface ReviewRecord {
 - Grade an attempt into quality 0–5 from the scorecard (and hint usage).
 - quality < 3 → lapse: interval resets to 1 day, ease −0.2 (floor 1.3).
 - quality ≥ 3 → interval ×= ease; ease adjusts ±0.05–0.1 by quality.
-- **Today's Review** = due records sorted by (mastery asc, overdue-days desc), capped at a configurable daily size. Reviewing a skill serves a randomly selected question tagged with that skill that the user hasn't seen most recently — cheap anti-memorization.
+- **Today's Review** = due records sorted by (skill score asc — via `computeSkillScore`, §7.2 — then overdue-days desc), capped at a configurable daily size. Reviewing a skill serves a randomly selected question tagged with that skill that the user hasn't seen most recently — cheap anti-memorization.
 
 The scheduler is a pure function `(record, quality, now) → record`, property-tested in Vitest (intervals grow monotonically on success, reset on lapse, ease stays within bounds).
 
@@ -421,12 +436,15 @@ A `dayLog` table records one row per active day. Streak = consecutive-day count 
 export interface StorageAdapter {
   getAttempts(q?: AttemptQuery): Promise<Attempt[]>;
   saveAttempt(a: Attempt): Promise<void>;
+  /** Overwrites an existing attempt's self-tags (§10) — the attempt itself is otherwise immutable. */
+  updateAttemptTags(attemptId: string, tags: AttemptTag[]): Promise<void>;
   getDraft(questionId: QuestionId): Promise<Draft | null>;
   saveDraft(d: Draft): Promise<void>;
-  getMastery(): Promise<SkillMastery[]>;
-  upsertMastery(m: SkillMastery): Promise<void>;
   getReviewRecords(): Promise<ReviewRecord[]>;
   upsertReviewRecord(r: ReviewRecord): Promise<void>;
+  getLearnCompletions(): Promise<LearnCompletion[]>;
+  /** Idempotent — marking an already-complete module complete again is a no-op update. */
+  markLearnComplete(moduleId: ModuleId): Promise<void>;
   getNotes(questionId: QuestionId): Promise<Note[]>;
   saveNote(n: Note): Promise<void>;
   getBookmarks(): Promise<Bookmark[]>;
@@ -438,7 +456,9 @@ export interface StorageAdapter {
 }
 ```
 
-Dexie tables mirror these entities 1:1, keyed and indexed for the queries above (`attempts` indexed by `questionId` and `createdAt`; `mastery` and `reviews` keyed by `skillId`). Content is **not** stored in the DB — it ships with the bundle; the DB stores only user-generated state referencing content by stable string ids. That makes content updates a redeploy, never a data migration.
+**Superseded (Triecode UI overhaul):** `getMastery`/`upsertMastery` and the `mastery` table are gone — mastery is a pure computation over `attempts` now (§7.2), nothing to store. Added instead: `updateAttemptTags` (post-fail self-tags, §10) and `getLearnCompletions`/`markLearnComplete` (one row per module whose Learn stage was explicitly marked complete — feeds mastery's Learn exercise-equivalent and `selectNextAction`, §10).
+
+Dexie tables mirror these entities 1:1, keyed and indexed for the queries above (`attempts` indexed by `questionId` and `createdAt`; `reviewRecords` keyed by `skillId`; `learnCompletions` keyed by `moduleId`). Content is **not** stored in the DB — it ships with the bundle; the DB stores only user-generated state referencing content by stable string ids. That makes content updates a redeploy, never a data migration.
 
 `ExportBundleV1` is a versioned JSON envelope (`{ schemaVersion: 1, exportedAt, tables: {...} }`). Import validates the version and refuses unknown ones. This is the manual laptop↔desktop sync story and, later, the seed data for first server sync.
 
@@ -454,21 +474,83 @@ export interface VizFrame { step: number; label: string; state: Json }  // e.g. 
 
 The UI plays frames through a `LinkedListView` SVG renderer (nodes, arrows, highlight diffs between frames). This is *post-hoc replay*, not live stepping — dramatically simpler, no Python debugger integration, and covers the pedagogical need ("watch your append actually attach the node"). The frame protocol is generic; tree/heap/graph renderers later just add new state shapes and renderers, no engine changes — which is exactly what the Trees, Heap / Priority Queue, and Graphs modules will need.
 
-The Learn stage additionally uses hand-authored animations (small React components) that don't depend on user code at all.
+The Learn stage additionally uses hand-authored figures that don't depend on user code at all — either a static `SequenceDiagramSpec` (boxes, optional arrows, optional pointer labels) or, where a lesson benefits from being manipulated rather than just read, an `InteractiveFigureBinding` (Triecode UI spec §9):
+
+```ts
+// content/types.ts
+export interface InteractiveFigureBinding { kind: 'stack_push_pop' }  // more kinds add more values, not new fields
+```
+
+`kind` selects the renderer in `ui/components/viz/InteractiveFigure.tsx` — the same selector pattern `VisualizationBinding` uses for trace-frame renderers. The stack module's "What is a stack?" lesson uses the one figure shipped so far: a real local-state Push/Pop demo (capped at 6 elements) so the LIFO discipline is felt, not just read. Both figure kinds are content-declared (a `LessonSection` field), never user-code-driven, and never touch storage.
 
 ---
 
-## 10. UI Surface (V1)
+## 10. UI System (Triecode UI overhaul)
 
-- **Roadmap** — React Flow DAG of all 18 nodes; 16 render as "coming soon" ghosts. Custom node = title + progress ring + mastery stars. Nodes are visually distinguished by category (one accent treatment for Data Structures, another for Algorithms) so the two-track shape of the curriculum is legible at a glance. Soft locking only: prerequisites are *recommended*, nothing is hard-locked (this is a personal tool; hard gates are friction without a reason).
-- **Module page** — stage list with per-stage completion.
-- **Question player** — split pane: prompt/hints left, Monaco right, results/viz bottom. Run (visible tests) / Submit (full grade) / Reset / auto-saving Draft / Notes drawer. Hints ladder unlocks 1→4 with confirmation; hint usage recorded.
-- **Interview mode** — same player, chrome stripped: no hints, timer visible, grade shown only after submit.
-- **Dashboard (trimmed)** — mastery overview by module (grouped by category), current/longest streak, Today's Review, weakest skills, recent attempts. The full 16-metric dashboard from the original brief is post-V1; these six are the ones with real data behind them on day one.
-- **Review** — the daily queue, one question at a time.
-- **Settings** — theme, editor prefs, export/import, wipe data.
+**Superseded (Triecode UI overhaul):** this replaces the original §10 wholesale — separate Roadmap and Dashboard pages, React Flow, and the five-dot stage-completion glyphs are gone. The sections below are the current source of truth for the UI layer; app name is **Triecode** everywhere user-visible.
 
-Design system: dark-first token set in `ui/theme/` (background layers, one accent, semantic success/fail, 4-step type scale, 150–200 ms ease-out motion). Keyboard shortcuts from day one: ⌘Enter run, ⌘S draft, ⌘K palette (palette itself can land in polish phase).
+**Core philosophy — guidance, not gates.** Nothing in the UI is locked. The one exception: a module with no authored content yet renders recessed with the literal text "In development" and isn't navigable — everything else is a live link regardless of progress elsewhere. The words "locked", "unlocks", and "coming soon" do not appear anywhere. No XP, badges, levels, avatars, sound, or confetti; the only motion is the `ProgressRing` arc and ≤200 ms transitions, both respecting `prefers-reduced-motion`.
+
+### 10.1 Two shells
+
+Every route uses exactly one of:
+
+- **`AppShell`** — persistent nav (wordmark + Home + Review), ~1100px centered column. Used by "browse/plan" screens: Home, Module.
+- **`FocusShell`** — a single "← back to {origin}" link, full-viewport content, nav recedes. Used by "do the work" screens: Learn, the question editor (including Interview Mode and Guided Build/Apply steps).
+
+`/roadmap` and `/dashboard` redirect to `/` — both pages merged into Home (§10.3).
+
+### 10.2 Tokens and `ProgressRing`
+
+`ui/theme/` defines `--bg-page` / `--bg-surface` / `--bg-surface-raised` (raised used sparingly — hero CTA, active editor pane), border tokens that only appear on hover/focus, `--success`, and three text levels (primary/secondary/muted). **Accent encodes exactly one meaning app-wide: "your frontier/recommended action"** — at most one accent-emphasized element per screen (hero CTA, the frontier module's ring/border, the current lesson step, a stage's Up-next card). Category color (Data Structures vs. Algorithms) is a separate, always-present distinction and never competes with accent for the same meaning.
+
+`ProgressRing` (`ui/components/common/ProgressRing.tsx`) is the one shared progress identity element — Home's module cards and the Module page header use the exact same component at `sm`/`lg` sizes, so advancing a module visibly transforms both. It always renders a real percentage (0% is a full track plus the text "0%", never a bare empty circle); the arc is accent only when the module is the global frontier (else neutral), success-colored (optionally a check glyph) at 100%. Its input is always `computeModuleMastery` (§7.2) — never raw solved/total.
+
+### 10.3 Home (`/`)
+
+Replaces Roadmap + Dashboard:
+
+- **Hero** — a dominant raised card reading whatever `selectNextAction` (§10.5) recommends: "N reviews due — Start review →" or "Continue: {module} — {exercise} →". Below it, a compact stats strip (streak, solved this week, total mastered).
+- **Streak heatmap** — renders nothing (not an empty grid) until ≥7 days of logged activity exist.
+- **Tiered curriculum map** — CSS grid rows keyed by `computeModuleDepths` (`engine/roadmap/dag.ts`, prerequisite depth), each row a wrapping flex of module cards. An SVG overlay (`useCardPositions` — a `useLayoutEffect` measuring real card `getBoundingClientRect()`s, re-run once loading data resolves and cards actually mount) draws prerequisite edges as quiet curves; caption reads "Suggested path — everything is open." Edges hide below the `md` breakpoint. No pan, zoom, or minimap (§2's decision record).
+- **Module cards** — title, category color, `sm ProgressRing`, "{n} of {m}" exercise count. States: the one global frontier module (accent ring + border), every other authored module (full-strength, always clickable), in-development ghosts (recessed, "In development", not a link). No category filter chips — the static layout plus category coloring is legible without them.
+
+### 10.4 Module page (`/modules/:id`) and Learn (`/modules/:id/learn`)
+
+Module page: `AppShell`, header with `lg ProgressRing` (frontier-aware, same as Home), category, summary, a quiet "Leads to: {dependent module titles}" line when other modules list this one as a prerequisite. Body is a vertical stepper — one entry per declared stage (stage ladders come from content order, validated by `validateStageOrder`, never an `if (kind === ...)` branch in the component, §4.3):
+
+- **Completed** — collapsed one-liner, check glyph + summary.
+- **Current (frontier)** — expanded, contains the screen's one accent element: an Up-next card with a Start button, remaining exercises listed below.
+- **Upcoming** — quiet `<details>`, but every item is a live link at all times — never disabled, never reduced-opacity.
+
+Learn: `FocusShell`, ~720px reading column, one lesson at a time behind a numbered-dot stepper (current = accent, completed = check) that replaces the old TOC + "LESSON N OF M" label — every dot is clickable regardless of order. Each lesson ends with a full-width `Continue →`; the final lesson instead reads `Mark Learn complete — start {stage} →`, which calls `storageAdapter.markLearnComplete` (idempotent) and routes straight to that stage's first step. Lesson figures: `StaticSequenceDiagram` or `InteractiveFigure` (§9).
+
+### 10.5 `selectNextAction` — the recommendation seam
+
+```ts
+// engine/nextAction/selectNextAction.ts
+export type NextAction =
+  | { kind: 'review'; dueCount: number }
+  | { kind: 'learn'; moduleId: ModuleId; moduleTitle: string; href: string }
+  | { kind: 'exercise'; moduleId: ModuleId; moduleTitle: string; questionId: QuestionId; questionTitle: string; href: string }
+  | { kind: 'none' };
+
+export function selectNextAction(snapshot: ProgressSnapshot): NextAction
+```
+
+Pure, unit-tested, takes a full `ProgressSnapshot` (no storage access itself). V1 policy: due reviews win; otherwise the first incomplete exercise in ladder order within the first incomplete module in DAG order (`orderModulesByDag`, same depth computation Home's layout uses). **Consumed by exactly three places** — Home's hero, Home's frontier ring highlighting, and the Module page's Up-next card — and it only ever recommends; no consumer may use its output to disable anything. Phase 5's real SM-2-lite due check already backs the review-urgency policy; deeper exercise-ordering heuristics can replace the DAG-order fallback later without any consumer changing, by design.
+
+### 10.6 Question player (editor)
+
+Split pane: prompt/hints left (bounded width, not one fixed magic number), Monaco right, a fixed-height Results strip (muted "Results" label, so the layout doesn't reflow between empty and populated) at the bottom. Run (visible tests) / Submit (full grade, Cmd/Ctrl+Shift+Enter as well as the button) / Reset (Cmd/Ctrl+Enter still runs); both shortcuts shown subtly on their buttons. After a passing Submit, "Compare with reference solution" reveals `CodeQuestion.solution`. After a failing Submit, four optional one-tap self-tags (Edge case / Off-by-one / Wrong approach / Syntax) persist against that attempt via `updateAttemptTags` (§8) — the attempt record is otherwise immutable. Pyodide's `warmup()` is scheduled on `requestIdleCallback` from the app root rather than run synchronously at mount, so it doesn't sit on the critical rendering path but still fires regardless of entry route (§6.2's "warmup on app start" invariant).
+
+**Interview Mode** is a deliberate toolbar button ("Start interview mode →"), not a small corner link — activating it is a real choice, not something you can fat-finger. Same player, chrome stripped: no hints, timer visible, grade shown only after submit.
+
+**Review** — the daily queue, one question at a time; a progress bar plus a per-skill chip strip (current/done/upcoming) is the single progress display — no redundant textual "N of M" counter alongside it.
+
+**Settings** (Phase 8, not yet built) — theme, editor prefs, export/import, wipe data.
+
+Keyboard shortcuts: Cmd/Ctrl+Enter run, Cmd/Ctrl+Shift+Enter submit, Cmd/Ctrl+S draft, ⌘K command palette (already wired — `ui/components/common/CommandPalette.tsx`).
 
 ---
 
