@@ -14,7 +14,11 @@ export function AppNav() {
           key={link.to}
           to={link.to}
           end={link.end}
-          className={({ isActive }) => (isActive ? 'font-medium text-accent' : 'text-text-muted hover:text-accent')}
+          className={({ isActive }) =>
+            `rounded transition-colors duration-200 ease-out-motion focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              isActive ? 'font-medium text-accent' : 'text-text-muted hover:text-accent'
+            }`
+          }
         >
           {link.label}
         </NavLink>

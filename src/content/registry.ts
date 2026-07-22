@@ -24,6 +24,17 @@ import { longestConsecutiveSequence } from './modules/arrays-hashing/questions/d
 import { groupAnagrams } from './modules/arrays-hashing/questions/drills/groupAnagrams';
 import { twoSum } from './modules/arrays-hashing/questions/drills/twoSum';
 import { productExceptSelf } from './modules/arrays-hashing/questions/drills/productExceptSelf';
+import { step1Push } from './modules/stack/questions/guidedBuild/step1Push';
+import { step2Pop } from './modules/stack/questions/guidedBuild/step2Pop';
+import { step3Peek } from './modules/stack/questions/guidedBuild/step3Peek';
+import { step4IsEmpty } from './modules/stack/questions/guidedBuild/step4IsEmpty';
+import { buildListBackedStack } from './modules/stack/questions/buildListBackedStack';
+import { buildLinkedStack } from './modules/stack/questions/buildLinkedStack';
+import { buildMinStack } from './modules/stack/questions/buildMinStack';
+import { validParentheses } from './modules/stack/questions/drills/validParentheses';
+import { dailyTemperatures } from './modules/stack/questions/drills/dailyTemperatures';
+import { nextGreaterElement } from './modules/stack/questions/drills/nextGreaterElement';
+import { evaluateRpn } from './modules/stack/questions/drills/evaluateRpn';
 import { roadmapModules } from './roadmap';
 
 export const questions: CodeQuestion[] = [
@@ -52,6 +63,17 @@ export const questions: CodeQuestion[] = [
   groupAnagrams,
   twoSum,
   productExceptSelf,
+  step1Push,
+  step2Pop,
+  step3Peek,
+  step4IsEmpty,
+  buildListBackedStack,
+  buildLinkedStack,
+  buildMinStack,
+  validParentheses,
+  dailyTemperatures,
+  nextGreaterElement,
+  evaluateRpn,
 ];
 
 export const questionsById: ReadonlyMap<QuestionId, CodeQuestion> = new Map(

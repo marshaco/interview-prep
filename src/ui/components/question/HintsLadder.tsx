@@ -22,7 +22,7 @@ export function HintsLadder({ hints, revealedCount, onReveal }: HintsLadderProps
               key={index}
               type="button"
               onClick={onReveal}
-              className="rounded border border-border bg-bg-raised px-3 py-2 text-left text-sm text-accent transition-colors hover:border-accent"
+              className="rounded border border-border bg-bg-raised px-3 py-2 text-left text-sm text-accent transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Show hint {index + 1} of {hints.length}
             </button>

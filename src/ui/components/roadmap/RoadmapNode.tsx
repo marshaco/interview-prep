@@ -7,6 +7,7 @@ export interface RoadmapNodeData extends Record<string, unknown> {
   category: ModuleCategory;
   isGhost: boolean;
   progress: number; // 0-1
+  onActivate: () => void;
 }
 
 export type RoadmapNodeType = Node<RoadmapNodeData, 'roadmapModule'>;
@@ -18,7 +19,16 @@ export function RoadmapNode({ data }: NodeProps<RoadmapNodeType>) {
 
   return (
     <div
-      className={`flex w-44 items-center gap-2 rounded-lg border-2 bg-bg-raised px-3 py-2 ${borderClass} ${data.isGhost ? 'opacity-60' : ''}`}
+      role="button"
+      tabIndex={0}
+      onClick={data.onActivate}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          data.onActivate();
+        }
+      }}
+      className={`flex w-44 items-center gap-2 rounded-lg border-2 bg-bg-raised px-3 py-2 transition-colors duration-200 ease-out-motion focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${borderClass} ${data.isGhost ? 'opacity-60' : ''}`}
     >
       <Handle type="target" position={Position.Left} className="!bg-border" />
       <ProgressRing progress={data.progress} size={28} strokeWidth={3} className={ringClass} />

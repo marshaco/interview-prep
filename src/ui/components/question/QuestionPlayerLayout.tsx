@@ -49,7 +49,7 @@ export function QuestionPlayerLayout({
                 type="button"
                 onClick={() => void player.run()}
                 disabled={player.isRunning}
-                className="rounded border border-border bg-bg-raised px-3 py-1.5 text-sm text-text hover:border-accent disabled:opacity-50"
+                className="rounded border border-border bg-bg-raised px-3 py-1.5 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 Run
               </button>
@@ -58,7 +58,7 @@ export function QuestionPlayerLayout({
               type="button"
               onClick={() => void player.submit()}
               disabled={player.isRunning}
-              className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-accent-solid px-3 py-1.5 text-sm font-medium text-white transition-colors duration-200 ease-out-motion hover:bg-accent-solid/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Submit
             </button>
@@ -66,7 +66,7 @@ export function QuestionPlayerLayout({
               type="button"
               onClick={player.reset}
               disabled={player.isRunning}
-              className="rounded px-3 py-1.5 text-sm text-text-muted hover:text-text disabled:opacity-50"
+              className="rounded px-3 py-1.5 text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-text disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Reset
             </button>

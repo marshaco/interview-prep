@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
+import { EmptyState } from '../components/common/EmptyState';
 
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -43,12 +44,12 @@ export function InterviewQuestionPage() {
 
   if (!question) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-text">Question not found.</p>
-        <Link to="/" className="text-accent">
-          ← Roadmap
-        </Link>
-      </div>
+      <EmptyState
+        title="Question not found"
+        description="This question doesn't exist, or its id changed."
+        actionLabel="← Back to roadmap"
+        actionHref="/"
+      />
     );
   }
 
@@ -58,7 +59,10 @@ export function InterviewQuestionPage() {
       player={player}
       interviewMode
       headerLeft={
-        <Link to={`/modules/${question.moduleId}`} className="text-sm text-text-muted hover:text-accent">
+        <Link
+          to={`/modules/${question.moduleId}`}
+          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+        >
           ← Exit interview
         </Link>
       }

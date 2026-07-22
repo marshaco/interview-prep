@@ -88,7 +88,7 @@ export function DashboardPage() {
           <p className="text-2xl font-semibold text-text">{longest}</p>
           <p className="text-xs text-text-muted">Longest streak</p>
         </div>
-        <Link to="/review" className="rounded border border-border bg-bg-raised p-4 transition-colors hover:border-accent">
+        <Link to="/review" className="rounded border border-border bg-bg-raised p-4 transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
           <p className="text-2xl font-semibold text-text">{dueToday.length}</p>
           <p className="text-xs text-text-muted">Due today — start review →</p>
         </Link>
@@ -104,7 +104,7 @@ export function DashboardPage() {
                 <li key={module.id}>
                   <Link
                     to={`/modules/${module.id}`}
-                    className="flex items-center gap-2 rounded border border-border bg-bg-raised px-3 py-2 text-sm text-text transition-colors hover:border-accent"
+                    className="flex items-center gap-2 rounded border border-border bg-bg-raised px-3 py-2 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     <ProgressRing progress={moduleProgress(module.skills, masteryBySkill)} size={24} strokeWidth={3} className="stroke-accent" />
                     <span className="truncate">{module.title}</span>
@@ -120,7 +120,7 @@ export function DashboardPage() {
                 <li key={module.id}>
                   <Link
                     to={`/modules/${module.id}`}
-                    className="flex items-center gap-2 rounded border border-border bg-bg-raised px-3 py-2 text-sm text-text transition-colors hover:border-accent"
+                    className="flex items-center gap-2 rounded border border-border bg-bg-raised px-3 py-2 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     <ProgressRing
                       progress={moduleProgress(module.skills, masteryBySkill)}

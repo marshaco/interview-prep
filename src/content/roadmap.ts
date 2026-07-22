@@ -1,11 +1,12 @@
 import type { RoadmapModule, Skill, Stage } from './types';
 import { linkedListModule } from './modules/linked-list/module';
 import { arraysHashingModule } from './modules/arrays-hashing/module';
+import { stackModule } from './modules/stack/module';
 
 /**
- * The 17 modules that don't have real content yet — stage skeletons only
- * (empty `items`), authored from ARCHITECTURE §4.1's catalog table so the
- * full 18-node roadmap DAG can render and be validated from day one. A
+ * The remaining modules that don't have real content yet — stage skeletons
+ * only (empty `items`), authored from ARCHITECTURE §4.1's catalog table so
+ * the full 18-node roadmap DAG can render and be validated from day one. A
  * module stops being a "ghost" in the UI the moment its stages gain real
  * items — nothing here needs to change when that content ships later.
  */
@@ -36,17 +37,6 @@ function skills(moduleId: string, kind: Skill['kind'], titles: string[]): Skill[
   }));
 }
 
-const stack: RoadmapModule = {
-  id: 'stack',
-  kind: 'data_structure',
-  title: 'Stack',
-  summary: 'LIFO push/pop/peek, and the monotonic-stack technique built on top of it.',
-  prerequisites: ['arrays-hashing'],
-  skills: skills('stack', 'method', ['push/pop/peek']).concat(
-    skills('stack', 'concept', ['monotonic stack', 'valid parentheses']),
-  ),
-  stages: dataStructureStages(),
-};
 
 const trees: RoadmapModule = {
   id: 'trees',
@@ -234,7 +224,7 @@ const mathGeometry: RoadmapModule = {
 
 export const roadmapModules: RoadmapModule[] = [
   // Data Structures
-  stack,
+  stackModule,
   linkedListModule,
   trees,
   tries,

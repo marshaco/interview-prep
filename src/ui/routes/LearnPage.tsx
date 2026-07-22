@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { getModule } from '../../content/registry';
 import { MarkdownContent } from '../components/common/MarkdownContent';
+import { EmptyState } from '../components/common/EmptyState';
 
 export function LearnPage() {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -10,12 +11,12 @@ export function LearnPage() {
 
   if (!module || !learnStage) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-text">Learn content not found.</p>
-        <Link to="/" className="text-accent">
-          ← Roadmap
-        </Link>
-      </div>
+      <EmptyState
+        title="Learn content not found"
+        description="This module doesn't exist, or has no Learn stage yet."
+        actionLabel="← Back to roadmap"
+        actionHref="/"
+      />
     );
   }
 
@@ -25,7 +26,10 @@ export function LearnPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
-      <Link to={`/modules/${module.id}`} className="text-sm text-text-muted hover:text-accent">
+      <Link
+        to={`/modules/${module.id}`}
+        className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+      >
         ← Back to module
       </Link>
       <h1 className="mb-1 mt-4 text-xl font-semibold text-text">{module.title}: Learn</h1>
@@ -39,7 +43,10 @@ export function LearnPage() {
           ) : null,
         )}
       </div>
-      <Link to={nextHref} className="mt-8 inline-block rounded bg-accent px-4 py-2 text-sm font-medium text-white">
+      <Link
+        to={nextHref}
+        className="mt-8 inline-block rounded bg-accent-solid px-4 py-2 text-sm font-medium text-white transition-colors duration-200 ease-out-motion hover:bg-accent-solid/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
         Continue to {nextStage?.title ?? 'module'} →
       </Link>
     </div>

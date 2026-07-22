@@ -153,7 +153,7 @@ export function LinkedListView({ frames }: LinkedListViewProps) {
             setStepIndex((i) => Math.max(0, i - 1));
           }}
           disabled={stepIndex === 0}
-          className="rounded border border-border bg-bg px-2 py-1 text-xs text-text hover:border-accent disabled:opacity-40"
+          className="rounded border border-border bg-bg px-2 py-1 text-xs text-text transition-colors duration-200 ease-out-motion hover:border-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           ← Prev
         </button>
@@ -167,7 +167,7 @@ export function LinkedListView({ frames }: LinkedListViewProps) {
               setIsPlaying((p) => !p);
             }
           }}
-          className="rounded border border-border bg-bg px-2 py-1 text-xs text-text hover:border-accent disabled:opacity-40"
+          className="rounded border border-border bg-bg px-2 py-1 text-xs text-text transition-colors duration-200 ease-out-motion hover:border-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {atEnd ? 'Replay' : isPlaying ? 'Pause' : 'Play'}
         </button>
@@ -178,7 +178,7 @@ export function LinkedListView({ frames }: LinkedListViewProps) {
             setStepIndex((i) => Math.min(frames.length - 1, i + 1));
           }}
           disabled={stepIndex >= frames.length - 1}
-          className="rounded border border-border bg-bg px-2 py-1 text-xs text-text hover:border-accent disabled:opacity-40"
+          className="rounded border border-border bg-bg px-2 py-1 text-xs text-text transition-colors duration-200 ease-out-motion hover:border-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           Next →
         </button>

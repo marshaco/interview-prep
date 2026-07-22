@@ -43,10 +43,11 @@ export function RoadmapPage() {
             category: module.kind === 'data_structure' ? 'Data Structures' : 'Algorithms',
             isGhost,
             progress: moduleProgress(module.skills, masteryBySkill),
+            onActivate: () => void navigate(`/modules/${module.id}`),
           },
         };
       }),
-    [positions, masteryBySkill],
+    [positions, masteryBySkill, navigate],
   );
 
   const edges: Edge[] = useMemo(
@@ -76,10 +77,10 @@ export function RoadmapPage() {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => void navigate(`/modules/${node.id}`)}
           fitView
           nodesDraggable={false}
           nodesConnectable={false}
+          nodesFocusable={false}
           colorMode="dark"
         >
           <Background />

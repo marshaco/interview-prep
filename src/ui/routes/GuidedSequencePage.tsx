@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getModule, getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
+import { EmptyState } from '../components/common/EmptyState';
 import type { StageType } from '../../content/types';
 
 const STAGE_TYPE_BY_SLUG: Record<string, StageType> = {
@@ -25,12 +26,12 @@ export function GuidedSequencePage() {
 
   if (!module || !stage || !question || Number.isNaN(stepIndex) || stepIndex < 0) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-text">Step not found.</p>
-        <Link to="/" className="text-accent">
-          ← Roadmap
-        </Link>
-      </div>
+      <EmptyState
+        title="Step not found"
+        description="This step doesn't exist, or the stage's question list changed."
+        actionLabel="← Back to roadmap"
+        actionHref="/"
+      />
     );
   }
 
@@ -45,7 +46,10 @@ export function GuidedSequencePage() {
       question={question}
       player={player}
       headerLeft={
-        <Link to={`/modules/${module.id}`} className="text-sm text-text-muted hover:text-accent">
+        <Link
+          to={`/modules/${module.id}`}
+          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+        >
           ← Back to module
         </Link>
       }
@@ -59,7 +63,7 @@ export function GuidedSequencePage() {
           <button
             type="button"
             onClick={() => void navigate(nextHref)}
-            className="mt-4 rounded bg-accent px-4 py-2 text-sm font-medium text-white"
+            className="mt-4 rounded bg-accent-solid px-4 py-2 text-sm font-medium text-white transition-colors duration-200 ease-out-motion hover:bg-accent-solid/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {nextLabel}
           </button>

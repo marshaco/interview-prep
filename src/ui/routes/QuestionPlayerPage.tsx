@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getQuestion } from '../../content/registry';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
+import { EmptyState } from '../components/common/EmptyState';
 
 export function QuestionPlayerPage() {
   const params = useParams<{ '*': string }>();
@@ -12,12 +13,12 @@ export function QuestionPlayerPage() {
 
   if (!question) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-text">Question not found.</p>
-        <Link to="/" className="text-accent">
-          ← Roadmap
-        </Link>
-      </div>
+      <EmptyState
+        title="Question not found"
+        description="This question doesn't exist, or its id changed."
+        actionLabel="← Back to roadmap"
+        actionHref="/"
+      />
     );
   }
 
@@ -26,12 +27,18 @@ export function QuestionPlayerPage() {
       question={question}
       player={player}
       headerLeft={
-        <Link to={`/modules/${question.moduleId}`} className="text-sm text-text-muted hover:text-accent">
+        <Link
+          to={`/modules/${question.moduleId}`}
+          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+        >
           ← Back to module
         </Link>
       }
       headerRight={
-        <Link to={`/interview/${question.id}`} className="text-xs uppercase tracking-wide text-text-muted hover:text-accent">
+        <Link
+          to={`/interview/${question.id}`}
+          className="text-xs uppercase tracking-wide text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+        >
           Interview Mode →
         </Link>
       }

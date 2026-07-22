@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { questions } from '../../content/registry';
 import { buildTodaysReview, pickReviewQuestion, type DueReviewItem } from '../../engine/srs/queue';
 import { localDateIso } from '../../engine/srs/streaks';
+import { questions } from '../../content/registry';
 import { storageAdapter } from '../storageAdapter';
 import { useQuestionPlayer } from '../hooks/useQuestionPlayer';
 import { QuestionPlayerLayout } from '../components/question/QuestionPlayerLayout';
 import { AppNav } from '../components/common/AppNav';
+import { EmptyState } from '../components/common/EmptyState';
 import type { CodeQuestion } from '../../content/types';
 
 export function ReviewPage() {
@@ -49,10 +50,7 @@ export function ReviewPage() {
     return (
       <div>
         <AppNav />
-        <div className="mx-auto max-w-2xl px-6 py-10">
-          <h1 className="mb-2 text-xl font-semibold text-text">Today's Review</h1>
-          <p className="text-sm text-text-muted">Nothing due today. Come back tomorrow.</p>
-        </div>
+        <EmptyState title="Today's Review" description="Nothing due today. Come back tomorrow." />
       </div>
     );
   }
@@ -61,15 +59,12 @@ export function ReviewPage() {
     return (
       <div>
         <AppNav />
-        <div className="mx-auto max-w-2xl px-6 py-10">
-          <h1 className="mb-2 text-xl font-semibold text-text">You're done for today</h1>
-          <p className="mb-6 text-sm text-text-muted">
-            Reviewed {queue.length} skill{queue.length === 1 ? '' : 's'}.
-          </p>
-          <Link to="/dashboard" className="inline-block rounded bg-accent px-4 py-2 text-sm font-medium text-white">
-            Back to dashboard
-          </Link>
-        </div>
+        <EmptyState
+          title="You're done for today"
+          description={`Reviewed ${queue.length} skill${queue.length === 1 ? '' : 's'}.`}
+          actionLabel="Back to dashboard"
+          actionHref="/dashboard"
+        />
       </div>
     );
   }
@@ -88,7 +83,10 @@ export function ReviewPage() {
       question={currentQuestion}
       player={player}
       headerLeft={
-        <Link to="/dashboard" className="text-sm text-text-muted hover:text-accent">
+        <Link
+          to="/dashboard"
+          className="text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-accent"
+        >
           ← Dashboard
         </Link>
       }
@@ -102,7 +100,7 @@ export function ReviewPage() {
           <button
             type="button"
             onClick={() => setCurrentIndex((i) => i + 1)}
-            className="mt-4 rounded bg-accent px-4 py-2 text-sm font-medium text-white"
+            className="mt-4 rounded bg-accent-solid px-4 py-2 text-sm font-medium text-white transition-colors duration-200 ease-out-motion hover:bg-accent-solid/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {isLastItem ? 'Finish review →' : 'Next review →'}
           </button>

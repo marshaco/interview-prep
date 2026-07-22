@@ -5,6 +5,7 @@ import { masteryStars } from '../../engine/mastery/mastery';
 import { storageAdapter } from '../storageAdapter';
 import { StarRating } from '../components/common/StarRating';
 import { AppNav } from '../components/common/AppNav';
+import { EmptyState } from '../components/common/EmptyState';
 import type { Attempt, SkillMastery } from '../../storage/types';
 import type { QuestionId, SkillId, StageType } from '../../content/types';
 
@@ -39,12 +40,12 @@ export function ModulePage() {
 
   if (!module) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-text">Module not found.</p>
-        <Link to="/" className="text-accent">
-          ← Roadmap
-        </Link>
-      </div>
+      <EmptyState
+        title="Module not found"
+        description="This roadmap node doesn't exist, or its id changed."
+        actionLabel="← Back to roadmap"
+        actionHref="/"
+      />
     );
   }
 
@@ -84,7 +85,7 @@ export function ModulePage() {
             {hasContent && stageLink && (
               <Link
                 to={`/modules/${module.id}/${stageLink}`}
-                className="block rounded border border-border bg-bg-raised px-4 py-3 text-sm text-text transition-colors hover:border-accent"
+                className="block rounded border border-border bg-bg-raised px-4 py-3 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {stage.type === 'learn' ? 'Start Learn' : `Start ${stage.title} (${questionItems.length} steps)`}
               </Link>
@@ -100,7 +101,7 @@ export function ModulePage() {
                     <li key={item.questionId}>
                       <Link
                         to={`/questions/${item.questionId}`}
-                        className="flex items-center justify-between rounded border border-border bg-bg-raised px-4 py-3 text-sm text-text transition-colors hover:border-accent"
+                        className="flex items-center justify-between rounded border border-border bg-bg-raised px-4 py-3 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <span>{question.title}</span>
                         <StarRating stars={stars ? masteryStars(stars) : 0} />

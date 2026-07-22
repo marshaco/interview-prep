@@ -58,7 +58,7 @@ export function VisualizationPanel({ question, code }: VisualizationPanelProps) 
         type="button"
         onClick={() => void runTrace()}
         disabled={isLoading}
-        className="rounded border border-border bg-bg px-3 py-1.5 text-sm text-accent hover:border-accent disabled:opacity-50"
+        className="rounded border border-border bg-bg px-3 py-1.5 text-sm text-accent transition-colors duration-200 ease-out-motion hover:border-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         {isLoading ? 'Building trace…' : '▶ Watch it build'}
       </button>

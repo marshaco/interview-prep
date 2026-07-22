@@ -9,6 +9,11 @@
   --color-text-muted: #8b909c;
   --color-accent: #5b8cff;
   --color-accent-muted: #2c3a63;
+  /* --color-accent (#5b8cff) reads fine as text/border/ring against our dark
+     backgrounds, but white text on it only hits 3.16:1 — short of WCAG AA's
+     4.5:1. Solid-fill buttons use this darker shade instead so button text
+     stays legible; text/border/ring usages of --color-accent are unaffected. */
+  --color-accent-solid: #3a63cc;
   /* Second accent, added in Phase 4 to visually distinguish the Algorithms
      category from Data Structures (--color-accent) on the roadmap — the
      "one accent" guidance predates the category discriminator. */
@@ -27,4 +32,14 @@ html {
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
+}
+
+/* React Flow's default attribution link color (#999 on its #353535 badge
+   background) falls just under WCAG AA (4.3:1, needs 4.5:1). Required
+   attribution stays — per xyflow's license, only its Pro tier may hide it —
+   this only raises the link's own contrast. !important because
+   @xyflow/react/dist/style.css loads in RoadmapPage's own lazy-loaded chunk,
+   so plain source order can't guarantee this rule wins the cascade. */
+.react-flow__attribution a {
+  color: #b8bcc4 !important;
 }
