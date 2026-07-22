@@ -94,6 +94,40 @@ const ALLOWED_STAGE_TYPES: Record<ModuleKind, StageType[]> = {
   algorithm: ['learn', 'guided_apply', 'algorithm_drills', 'interview_mode'],
 };
 
+/**
+ * Stage ladders come from content, not code (Triecode UI spec §8) — the
+ * Module page stepper renders `module.stages` in the order it finds them
+ * with no `if (kind === ...)` branching. That only produces a sane ladder
+ * if content itself declares stages in the canonical pedagogical order for
+ * its kind, so that ordering is enforced here instead.
+ */
+function validateStageOrder(module: RoadmapModule): string[] {
+  const errors: string[] = [];
+  const canonicalOrder = ALLOWED_STAGE_TYPES[module.kind];
+  const seenTypes = new Set<StageType>();
+  let lastCanonicalIndex = -1;
+
+  for (const stage of module.stages) {
+    if (seenTypes.has(stage.type)) {
+      errors.push(`${module.id}: stage type '${stage.type}' appears more than once`);
+      continue;
+    }
+    seenTypes.add(stage.type);
+
+    const canonicalIndex = canonicalOrder.indexOf(stage.type);
+    if (canonicalIndex === -1) continue; // not valid for this kind — already flagged separately
+
+    if (canonicalIndex < lastCanonicalIndex) {
+      errors.push(
+        `${module.id}: stage '${stage.type}' is out of order — kind '${module.kind}' must follow ${canonicalOrder.join(' -> ')}`,
+      );
+    }
+    lastCanonicalIndex = canonicalIndex;
+  }
+
+  return errors;
+}
+
 export function validateModule(module: RoadmapModule, questionIds: ReadonlySet<QuestionId>): string[] {
   const errors: string[] = [];
   const prefix = module.id || '<missing module id>';
@@ -109,6 +143,7 @@ export function validateModule(module: RoadmapModule, questionIds: ReadonlySet<Q
       }
     }
   }
+  errors.push(...validateStageOrder(module));
 
   if (module.skills.length === 0) {
     errors.push(`${prefix}: module has no skills`);

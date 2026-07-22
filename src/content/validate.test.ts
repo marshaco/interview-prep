@@ -238,6 +238,27 @@ describe('validateModule', () => {
     });
     expect(validateModule(module, new Set()).some((e) => e.includes("moduleId 'other-module'"))).toBe(true);
   });
+
+  it('flags a deliberately malformed ladder (stages out of pedagogical order)', () => {
+    const module = baseModule({
+      stages: [
+        { type: 'method_drills', title: 'Method Drills', items: [] },
+        { type: 'learn', title: 'Learn', items: [] },
+        { type: 'guided_build', title: 'Guided Build', items: [] },
+      ],
+    });
+    expect(validateModule(module, new Set()).some((e) => e.includes('is out of order'))).toBe(true);
+  });
+
+  it('flags a stage type repeated within one module', () => {
+    const module = baseModule({
+      stages: [
+        { type: 'learn', title: 'Learn', items: [] },
+        { type: 'learn', title: 'Learn again', items: [] },
+      ],
+    });
+    expect(validateModule(module, new Set()).some((e) => e.includes('appears more than once'))).toBe(true);
+  });
 });
 
 describe('validateModuleRegistry', () => {

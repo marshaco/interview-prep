@@ -17,16 +17,19 @@ export interface ProgressSnapshot {
   todayIso: string;
 }
 
-const STEPPER_STAGE_SLUG: Partial<Record<StageType, string>> = {
+// Exported for reuse by the Module page's stage stepper (Triecode UI spec §6),
+// which needs the same "where does this question live" logic per stage —
+// not just for the single globally-recommended next action.
+export const STEPPER_STAGE_SLUG: Partial<Record<StageType, string>> = {
   guided_build: 'guided-build',
   guided_apply: 'guided-apply',
 };
 
-function isSolved(attempts: Attempt[], questionId: QuestionId): boolean {
+export function isSolved(attempts: Attempt[], questionId: QuestionId): boolean {
   return attempts.some((a) => a.questionId === questionId && a.scorecard.overall === 100);
 }
 
-function exerciseHref(moduleId: ModuleId, stageType: StageType, questionId: QuestionId, stepIndex: number): string {
+export function exerciseHref(moduleId: ModuleId, stageType: StageType, questionId: QuestionId, stepIndex: number): string {
   const slug = STEPPER_STAGE_SLUG[stageType];
   return slug ? `/modules/${moduleId}/${slug}/${stepIndex + 1}` : `/questions/${questionId}`;
 }
