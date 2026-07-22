@@ -5,7 +5,7 @@ export const step4IsEmpty: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'stack',
   skillIds: ['stack/is-empty'],
-  title: 'Guided Build 4/4: is_empty',
+  title: 'is_empty',
   prompt: `## Guided Build 4 of 4: is_empty
 
 Last method. Implement \`is_empty()\`: return \`True\` if the stack has no

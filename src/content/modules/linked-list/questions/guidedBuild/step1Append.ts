@@ -5,7 +5,7 @@ export const step1Append: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'linked-list',
   skillIds: ['linked-list/append'],
-  title: 'Guided Build 1/4: append',
+  title: 'append',
   prompt: `## Guided Build 1 of 4: append
 
 You're building the \`LinkedList\` class one method at a time. \`Node\`,

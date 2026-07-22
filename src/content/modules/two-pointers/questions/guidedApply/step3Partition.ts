@@ -5,7 +5,7 @@ export const step3Partition: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'two-pointers',
   skillIds: ['two-pointers/partition'],
-  title: 'Guided Apply 3/4: partition',
+  title: 'partition',
   prompt: `## Guided Apply 3 of 4: partition
 
 Given a list of numbers, return a new list with every \`0\` moved to the

@@ -177,6 +177,63 @@ describe('selectNextAction', () => {
     expect(result).toEqual({ kind: 'none' });
   });
 
+  it('recommends an in-progress downstream module over an untouched earlier one in DAG order', () => {
+    const modules: RoadmapModule[] = [
+      {
+        id: 'root',
+        kind: 'algorithm',
+        title: 'Root',
+        summary: '',
+        prerequisites: [],
+        skills: [],
+        stages: [{ type: 'learn', title: 'Learn', items: [{ type: 'lesson', lesson: { id: 'l', title: 'L', body: '' } }] }],
+      },
+      {
+        id: 'downstream',
+        kind: 'data_structure',
+        title: 'Downstream',
+        summary: '',
+        prerequisites: ['root'],
+        skills: [],
+        stages: [
+          { type: 'learn', title: 'Learn', items: [{ type: 'lesson', lesson: { id: 'l2', title: 'L2', body: '' } }] },
+          { type: 'guided_build', title: 'Guided Build', items: [{ type: 'question', questionId: 'q1' }] },
+        ],
+      },
+    ];
+    const questions = [fakeQuestion('q1', 'downstream')];
+    // root's Learn is untouched; downstream's Learn is complete (momentum) but its
+    // Guided Build isn't — the amended policy should stick with downstream.
+    const result = selectNextAction(baseSnapshot({ modules, questions, learnCompletions: new Set(['downstream']) }));
+    expect(result.kind).toBe('exercise');
+    expect(result.kind === 'exercise' && result.moduleId).toBe('downstream');
+  });
+
+  it('falls back to strict DAG order when nothing has been started anywhere', () => {
+    const modules: RoadmapModule[] = [
+      {
+        id: 'root',
+        kind: 'algorithm',
+        title: 'Root',
+        summary: '',
+        prerequisites: [],
+        skills: [],
+        stages: [{ type: 'learn', title: 'Learn', items: [{ type: 'lesson', lesson: { id: 'l', title: 'L', body: '' } }] }],
+      },
+      {
+        id: 'downstream',
+        kind: 'data_structure',
+        title: 'Downstream',
+        summary: '',
+        prerequisites: ['root'],
+        skills: [],
+        stages: [{ type: 'learn', title: 'Learn', items: [{ type: 'lesson', lesson: { id: 'l2', title: 'L2', body: '' } }] }],
+      },
+    ];
+    const result = selectNextAction(baseSnapshot({ modules }));
+    expect(result).toEqual({ kind: 'learn', moduleId: 'root', moduleTitle: 'Root', href: '/modules/root/learn' });
+  });
+
   it('never restricts — its output is a recommendation only, callers must be free to ignore it', () => {
     // This is a documentation-style assertion: selectNextAction returns
     // plain data (no isLocked/disabled field of any kind).

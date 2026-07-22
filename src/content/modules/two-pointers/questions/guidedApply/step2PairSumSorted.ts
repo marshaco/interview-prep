@@ -5,7 +5,7 @@ export const step2PairSumSorted: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'two-pointers',
   skillIds: ['two-pointers/pair-sum-sorted'],
-  title: 'Guided Apply 2/4: pair-sum on sorted input',
+  title: 'pair-sum on sorted input',
   prompt: `## Guided Apply 2 of 4: pair-sum on sorted input
 
 Given a list of numbers **sorted in increasing order** and a target,

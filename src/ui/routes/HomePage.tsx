@@ -32,6 +32,13 @@ function isGhostModule(module: RoadmapModule): boolean {
   return module.stages.every((stage) => stage.items.length === 0);
 }
 
+/** "Learn ✓ · 3 of 11 solved" when Learn is done, so the ring % and this line never look like they disagree. */
+function moduleSubline(module: RoadmapModule, isLearnComplete: boolean, solvedCount: number, totalCount: number): string {
+  const hasLearnStage = module.stages.some((stage) => stage.type === 'learn' && stage.items.length > 0);
+  const solvedPart = `${solvedCount} of ${totalCount} solved`;
+  return hasLearnStage && isLearnComplete ? `Learn ✓ · ${solvedPart}` : solvedPart;
+}
+
 function heroCopy(nextAction: NextAction): { text: string; href: string } {
   switch (nextAction.kind) {
     case 'review':
@@ -123,8 +130,16 @@ export function HomePage() {
     return rows;
   }, [depths]);
 
+  // Only edges into a walkable (non-ghost) target render — a suggested path
+  // that ends at "In development" isn't a path you can actually take, and
+  // with only 4 authored modules so far, most of the DAG's edges connect
+  // two ghosts several tiers apart, which is exactly the tangle/long-edge
+  // clutter this filter removes.
   const edges = useMemo(
-    () => modules.flatMap((module) => module.prerequisites.map((prereqId) => ({ source: prereqId, target: module.id }))),
+    () =>
+      modules
+        .filter((module) => !isGhostModule(module))
+        .flatMap((module) => module.prerequisites.map((prereqId) => ({ source: prereqId, target: module.id }))),
     [],
   );
 
@@ -165,17 +180,19 @@ export function HomePage() {
         <p className="text-lg font-semibold text-accent">{hero.text}</p>
       </Link>
 
-      <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
-        <span>
-          <span className="font-semibold text-text">{streak}</span> day streak
-        </span>
-        <span>
-          <span className="font-semibold text-text">{solvedThisWeek}</span> solved this week
-        </span>
-        <span>
-          <span className="font-semibold text-text">{totalMastered}</span> mastered
-        </span>
-      </div>
+      {(streak > 0 || solvedThisWeek > 0 || totalMastered > 0) && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
+          <span>
+            <span className="font-semibold text-text">{streak}</span> day streak
+          </span>
+          <span>
+            <span className="font-semibold text-text">{solvedThisWeek}</span> solved this week
+          </span>
+          <span>
+            <span className="font-semibold text-text">{totalMastered}</span> mastered
+          </span>
+        </div>
+      )}
 
       {showHeatmap && (
         <div className="mb-8">
@@ -202,6 +219,7 @@ export function HomePage() {
                 d={`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`}
                 stroke="var(--color-border-strong)"
                 strokeWidth={1.5}
+                strokeOpacity={0.25}
                 fill="none"
               />
             );
@@ -213,12 +231,12 @@ export function HomePage() {
             {tierModules.map((module) => {
               const isGhost = isGhostModule(module);
               const isDataStructure = module.kind === 'data_structure';
-              const categoryBorder = isDataStructure ? 'border-accent/40' : 'border-accent-secondary/40';
-              const categoryText = isDataStructure ? 'text-accent' : 'text-accent-secondary';
+              const categoryDotClass = isDataStructure ? 'bg-category-ds' : 'bg-accent-secondary';
               const isFrontier = module.id === frontierModuleId;
               const questionIds = moduleQuestionIds(module);
               const solvedCount = questionIds.filter((id) => data.attempts.some((a) => a.questionId === id && a.scorecard.overall === 100)).length;
-              const progress = computeModuleMastery(module, data.attempts, data.learnCompletions.has(module.id));
+              const isLearnComplete = data.learnCompletions.has(module.id);
+              const progress = computeModuleMastery(module, data.attempts, isLearnComplete);
 
               if (isGhost) {
                 return (
@@ -226,7 +244,7 @@ export function HomePage() {
                     key={module.id}
                     ref={setCardRef(module.id)}
                     style={{ width: CARD_WIDTH }}
-                    className="rounded-lg border border-dashed border-border px-3 py-2.5 opacity-50"
+                    className="rounded-lg px-3 py-2.5 opacity-50"
                   >
                     <p className="truncate text-sm font-medium text-text-muted">{module.title}</p>
                     <p className="text-xs text-text-muted">In development</p>
@@ -241,15 +259,16 @@ export function HomePage() {
                   ref={setCardRef(module.id)}
                   style={{ width: CARD_WIDTH }}
                   className={`flex items-center gap-3 rounded-lg border bg-bg-raised px-3 py-2.5 transition-colors duration-200 ease-out-motion hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-                    isFrontier ? 'border-accent' : `${categoryBorder}`
+                    isFrontier ? 'border-accent' : 'border-border'
                   }`}
                 >
                   <ProgressRing progress={progress} size="sm" isFrontier={isFrontier} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text">{module.title}</p>
-                    <p className={`text-xs ${categoryText}`}>
-                      {solvedCount} of {questionIds.length}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${categoryDotClass}`} aria-hidden />
+                      <p className="truncate text-sm font-medium text-text">{module.title}</p>
+                    </div>
+                    <p className="text-xs text-text-muted">{moduleSubline(module, isLearnComplete, solvedCount, questionIds.length)}</p>
                   </div>
                 </Link>
               );

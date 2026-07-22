@@ -5,7 +5,7 @@ export const step5PrefixProducts: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'arrays-hashing',
   skillIds: ['arrays-hashing/prefix-products'],
-  title: 'Guided Apply 5/5: prefix products',
+  title: 'prefix products',
   prompt: `## Guided Apply 5 of 5: prefix products
 
 Given a list of numbers, return a new list where each index \`i\` holds the

@@ -5,7 +5,7 @@ export const step3Peek: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'stack',
   skillIds: ['stack/peek'],
-  title: 'Guided Build 3/4: peek',
+  title: 'peek',
   prompt: `## Guided Build 3 of 4: peek
 
 \`push\` and \`pop\` are done. Now implement \`peek()\`: return the top item

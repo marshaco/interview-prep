@@ -5,7 +5,7 @@ export const step1Push: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'stack',
   skillIds: ['stack/push'],
-  title: 'Guided Build 1/4: push',
+  title: 'push',
   prompt: `## Guided Build 1 of 4: push
 
 You're building a \`Stack\` class one method at a time, backed by a plain

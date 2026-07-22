@@ -5,7 +5,7 @@ export const step4Search: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'linked-list',
   skillIds: ['linked-list/search'],
-  title: 'Guided Build 4/4: search',
+  title: 'search',
   prompt: `## Guided Build 4 of 4: search
 
 Last method. Implement \`search(value)\`: return \`True\` if any node holds

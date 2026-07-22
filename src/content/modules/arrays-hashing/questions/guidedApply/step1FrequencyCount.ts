@@ -5,7 +5,7 @@ export const step1FrequencyCount: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'arrays-hashing',
   skillIds: ['arrays-hashing/frequency-count'],
-  title: 'Guided Apply 1/5: frequency counting',
+  title: 'frequency counting',
   prompt: `## Guided Apply 1 of 5: frequency counting
 
 Given a list of strings, return a dict mapping each string to the number

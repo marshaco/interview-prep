@@ -5,7 +5,7 @@ export const step2Pop: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'stack',
   skillIds: ['stack/pop'],
-  title: 'Guided Build 2/4: pop',
+  title: 'pop',
   prompt: `## Guided Build 2 of 4: pop
 
 \`push\` is done. Now implement \`pop()\`: remove and return the top item.

@@ -5,7 +5,7 @@ export const step2HashSetMembership: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'arrays-hashing',
   skillIds: ['arrays-hashing/hash-set-membership'],
-  title: 'Guided Apply 2/5: hash set membership',
+  title: 'hash set membership',
   prompt: `## Guided Apply 2 of 5: hash set membership
 
 Given a list of numbers, return \`True\` if any value appears more than

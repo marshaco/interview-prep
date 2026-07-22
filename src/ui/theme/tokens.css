@@ -31,11 +31,12 @@
      stays legible; text/border/ring usages of --color-accent are unaffected. */
   --color-accent-solid: #3a63cc;
 
-  /* --- Category color: Algorithms' identity color, orthogonal to accent.
-     This encodes "which track this module belongs to," never "recommended
-     action" — the two systems never mix on the same element. --- */
-  --color-accent-secondary: #e2a83e;
+  /* --- Category color: which track a module belongs to, never "recommended
+     action" — orthogonal to accent, confined to small dots/eyebrow text,
+     never a card border (a colored border reads as the frontier signal). --- */
+  --color-accent-secondary: #e2a83e; /* Algorithms */
   --color-accent-secondary-muted: #4a3c1f;
+  --color-category-ds: #4fb0a8; /* Data Structures — teal, distinct from accent blue */
 
   --color-success: #3ecf8e;
   --color-danger: #ef5a5a;

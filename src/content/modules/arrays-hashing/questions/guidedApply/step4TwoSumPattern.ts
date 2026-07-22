@@ -5,7 +5,7 @@ export const step4TwoSumPattern: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'arrays-hashing',
   skillIds: ['arrays-hashing/two-sum-pattern'],
-  title: 'Guided Apply 4/5: two-sum pattern',
+  title: 'two-sum pattern',
   prompt: `## Guided Apply 4 of 5: two-sum pattern
 
 Given a list of numbers and a target, return the indices \`[i, j]\` of two

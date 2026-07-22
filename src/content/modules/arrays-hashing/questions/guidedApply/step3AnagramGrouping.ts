@@ -5,7 +5,7 @@ export const step3AnagramGrouping: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'arrays-hashing',
   skillIds: ['arrays-hashing/anagram-grouping'],
-  title: 'Guided Apply 3/5: anagram grouping',
+  title: 'anagram grouping',
   prompt: `## Guided Apply 3 of 5: anagram grouping
 
 Before grouping many words into anagram buckets, you need a way to tell if

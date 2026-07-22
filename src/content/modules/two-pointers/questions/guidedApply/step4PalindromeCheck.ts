@@ -5,7 +5,7 @@ export const step4PalindromeCheck: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'two-pointers',
   skillIds: ['two-pointers/palindrome-check'],
-  title: 'Guided Apply 4/4: palindrome check',
+  title: 'palindrome check',
   prompt: `## Guided Apply 4 of 4: palindrome check
 
 Given a string containing only lowercase letters, return \`True\` if it

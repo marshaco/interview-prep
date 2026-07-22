@@ -5,7 +5,7 @@ export const step3Delete: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'linked-list',
   skillIds: ['linked-list/delete'],
-  title: 'Guided Build 3/4: delete',
+  title: 'delete',
   prompt: `## Guided Build 3 of 4: delete
 
 \`append\` and \`prepend\` are done. Now implement \`delete(value)\`: remove

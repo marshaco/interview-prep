@@ -5,7 +5,7 @@ export const step2Prepend: CodeQuestion = {
   kind: 'method_impl',
   moduleId: 'linked-list',
   skillIds: ['linked-list/prepend'],
-  title: 'Guided Build 2/4: prepend',
+  title: 'prepend',
   prompt: `## Guided Build 2 of 4: prepend
 
 \`append\` is done. Now implement \`prepend(value)\`: attach a new node

@@ -5,7 +5,7 @@ export const step1ConvergingPointers: CodeQuestion = {
   kind: 'algorithm_problem',
   moduleId: 'two-pointers',
   skillIds: ['two-pointers/converging-pointers'],
-  title: 'Guided Apply 1/4: converging pointers',
+  title: 'converging pointers',
   prompt: `## Guided Apply 1 of 4: converging pointers
 
 Given a list of characters, return it reversed — **without** using
