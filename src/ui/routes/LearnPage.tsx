@@ -93,7 +93,7 @@ export function LearnPage() {
           </ol>
 
           {currentItem?.type === 'lesson' && (
-            <article className="flex flex-col gap-4">
+            <article className="flex flex-col gap-4 rounded-lg bg-bg-raised p-6">
               {currentItem.lesson.interactiveFigure ? (
                 <InteractiveFigure binding={currentItem.lesson.interactiveFigure} />
               ) : (
