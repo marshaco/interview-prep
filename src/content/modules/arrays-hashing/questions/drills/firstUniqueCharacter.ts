@@ -21,7 +21,6 @@ count of 1 — two O(n) passes beats re-scanning the whole string for every
 character.`,
   starterCode: `def first_unique_char(s):
     # TODO: return the index of the first non-repeating character, or -1.
-    pass
 `,
   solution: `def first_unique_char(s):
     counts = {}

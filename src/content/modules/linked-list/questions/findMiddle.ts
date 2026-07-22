@@ -26,7 +26,6 @@ def find_middle(head):
 
 def find_middle(head):
     # TODO: return the value of the middle node (upper middle if even length).
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

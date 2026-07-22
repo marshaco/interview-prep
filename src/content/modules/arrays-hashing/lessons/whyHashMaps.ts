@@ -18,13 +18,13 @@ def has_duplicate_slow(nums):
     return False
 \`\`\`
 
-That \`in seen\` check is O(k) for a list of length k, so the whole function
-is O(n²) in the worst case — for every new element, you re-scan everything
-before it.
+That \`in seen\` check costs O(k) for a list of length k, which makes the
+whole function O(n²) in the worst case: for every new element, you're
+re-scanning everything that came before it.
 
-A **hash map** (Python's \`dict\`) and its cousin the **hash set**
-(\`set\`) trade a little memory for O(1) *average-case* membership and
-lookup. The same function, rewritten:
+A **hash map** — Python's \`dict\` — and its cousin the **hash set**
+(\`set\`) trade a bit of memory for O(1) average-case membership and
+lookup. Same function, rewritten:
 
 \`\`\`python
 def has_duplicate(nums):
@@ -36,13 +36,13 @@ def has_duplicate(nums):
     return False
 \`\`\`
 
-Same shape, same one pass over the input — just a different container for
-"what have I seen." This single swap — array/list scan → hash set/map
-lookup — is the single most common technique in interview-style array
-problems, and it's the thread connecting every exercise in this module:
-counting frequencies, checking membership, grouping by a computed key, and
-finding complements are all "remember something in a hash map/set, then
-look it up later" wearing different clothes.
+Same shape, same single pass over the input, just a different container
+for "what have I seen so far." Swapping a list scan for a hash set or map
+lookup is probably the single most common move in array interview
+problems. Every exercise in this module comes back to it in some form:
+counting frequencies, checking membership, grouping by a computed key,
+finding complements — underneath, they're all just "remember something,
+then look it up later."
 
 |                     | List scan | Hash set/map |
 |---------------------|-----------|--------------|
@@ -50,7 +50,7 @@ look it up later" wearing different clothes.
 | Extra space          | O(1)      | O(n) |
 | Preserves order      | yes       | no (sets/dicts don't sort) |
 
-The trade-off: hash maps cost O(n) extra space and don't preserve any
-ordering. For problems where you need speed and don't care about order,
-that's almost always the right trade.`,
+The cost: O(n) extra space, and no ordering guarantee. When you need
+speed and don't care about order, that's a trade worth making almost
+every time.`,
 };

@@ -23,7 +23,6 @@ ever count forward from run starts — every number is visited at most
 twice, giving O(n).`,
   starterCode: `def longest_consecutive(nums):
     # TODO: return the length of the longest run of consecutive integers.
-    pass
 `,
   solution: `def longest_consecutive(nums):
     num_set = set(nums)

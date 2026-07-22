@@ -28,7 +28,6 @@ position (the fixed number, and both pointers) so the same triplet is
 never produced twice.`,
   starterCode: `def three_sum(nums):
     # TODO: return every unique triplet summing to zero.
-    pass
 `,
   solution: `def three_sum(nums):
     nums = sorted(nums)

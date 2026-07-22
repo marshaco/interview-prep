@@ -30,7 +30,6 @@ If \`head\` is \`None\`, the new node becomes the whole list.`,
 
 def append(head, value):
     # TODO: attach a new node holding value to the end of the list.
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

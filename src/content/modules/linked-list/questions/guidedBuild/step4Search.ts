@@ -52,7 +52,6 @@ class LinkedList:
 
     def search(self, value):
         # TODO: return True if value is found anywhere in the list.
-        pass
 
     def to_list(self):
         result = []

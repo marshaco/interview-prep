@@ -25,23 +25,18 @@ This is the same behavior as the Guided Build stage, assembled in one go.
 
     def push(self, value):
         # TODO
-        pass
 
     def pop(self):
         # TODO
-        pass
 
     def peek(self):
         # TODO
-        pass
 
     def is_empty(self):
         # TODO
-        pass
 
     def to_list(self):
         # TODO
-        pass
 `,
   solution: `class Stack:
     def __init__(self):

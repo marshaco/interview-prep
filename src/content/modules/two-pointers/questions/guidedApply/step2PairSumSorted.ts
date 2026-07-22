@@ -22,7 +22,6 @@ up is a bigger left value, so move \`left\` forward. If it sums too high,
 move \`right\` back.`,
   starterCode: `def two_sum_sorted(numbers, target):
     # TODO: return the 1-indexed [i, j] of two numbers summing to target.
-    pass
 `,
   solution: `def two_sum_sorted(numbers, target):
     left, right = 0, len(numbers) - 1

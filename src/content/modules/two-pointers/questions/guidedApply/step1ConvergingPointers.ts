@@ -20,7 +20,6 @@ Start a pointer at each end. Swap, then move both pointers one step
 toward the middle, until they meet.`,
   starterCode: `def reverse_string(chars):
     # TODO: return chars reversed, using two converging pointers.
-    pass
 `,
   solution: `def reverse_string(chars):
     result = list(chars)

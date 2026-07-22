@@ -24,7 +24,6 @@ def search(head, value):
 
 def search(head, value):
     # TODO: return True if value is found anywhere in the list.
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

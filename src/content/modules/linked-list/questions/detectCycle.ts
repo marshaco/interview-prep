@@ -25,7 +25,6 @@ def detect_cycle(head):
 
 def detect_cycle(head):
     # TODO: return True if the list loops back on itself.
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

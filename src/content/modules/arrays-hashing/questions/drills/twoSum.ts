@@ -19,7 +19,6 @@ def two_sum(nums, target):
 `,
   starterCode: `def two_sum(nums, target):
     # TODO: return [i, j] — the indices of two numbers summing to target.
-    pass
 `,
   solution: `def two_sum(nums, target):
     seen = {}

@@ -21,7 +21,6 @@ the *complement* — \`target - nums[i]\` — that would pair with this one?"
 A dict mapping value → index answers that in O(1).`,
   starterCode: `def two_sum(nums, target):
     # TODO: return [i, j] — the indices of two numbers summing to target.
-    pass
 `,
   solution: `def two_sum(nums, target):
     seen = {}

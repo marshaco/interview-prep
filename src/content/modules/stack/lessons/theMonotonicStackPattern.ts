@@ -14,16 +14,17 @@ export const theMonotonicStackPattern: LessonSection = {
   },
   body: `## The monotonic stack pattern
 
-A **monotonic stack** keeps its elements in strictly increasing (or
-decreasing) order at all times, by popping whatever would break that order
-*before* pushing the new element. It's the standard O(n) tool for
-"find the next element that's bigger/smaller than this one," for every
-index, in a single pass.
+A **monotonic stack** stays sorted at all times — strictly increasing or
+strictly decreasing — by popping anything that would break that order
+before it pushes the new element. It's the standard way to answer "what's
+the next bigger (or smaller) element" for every index in a single O(n)
+pass.
 
-Take "find, for each day, how many days until a warmer temperature" —
-the naive approach checks every later day for every day, O(n²). The
-monotonic-stack version keeps a stack of *indices* whose temperatures are
-still waiting for a warmer day, in decreasing order of temperature:
+Take the classic version of this problem: for each day, how many days do
+you wait until a warmer one shows up? Checking every later day for every
+day is O(n²). The monotonic-stack version instead keeps a stack of
+indices still waiting for a warmer day, always in decreasing order of
+temperature:
 
 \`\`\`python
 def daily_temperatures(temps):
@@ -37,16 +38,18 @@ def daily_temperatures(temps):
     return answer
 \`\`\`
 
-Walk it: whenever today's temperature is warmer than the one on top of the
-stack, that colder day has *found its answer* — pop it, record the gap,
-and keep checking (there might be several colder days waiting). Only once
-nothing left on the stack is beaten by today do you push today's index.
+Here's what happens as you walk it: when today is warmer than the top of
+the stack, that colder day just found its answer. Pop it, record the gap,
+and check again — there could be several colder days stacked up waiting.
+Once nothing left on the stack loses to today, push today's index and
+move on.
 
-Every index is pushed once and popped at most once, so the total work
-across the whole loop is O(n) even though there's a \`while\` loop nested
-inside the \`for\` loop — the trap is eyeballing the nested loop and
-assuming O(n²). This exact shape — pop while the invariant would break,
-then push — is what "monotonic stack" means, and it solves "next greater
-element," "next warmer day," and "largest rectangle in a histogram" with
-only the comparison direction changing.`,
+Every index gets pushed exactly once and popped at most once, so the
+total work across the whole loop is O(n) — even with a \`while\` loop
+sitting inside the \`for\` loop. That nested loop is the trap: it looks
+like O(n²) if you don't notice that each element can only ever be popped
+once. Pop while the invariant would break, then push. That's the entire
+pattern, and it's what solves next greater element, next warmer day, and
+largest rectangle in a histogram, changing only which direction you
+compare in.`,
 };

@@ -24,7 +24,6 @@ def reverse_list(head):
 
 def reverse_list(head):
     # TODO: reverse the list in place and return the new head.
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

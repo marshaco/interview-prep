@@ -22,7 +22,6 @@ temperatures stay in decreasing order. Whenever today beats the top of the
 stack, that day has found its answer — pop it and record the gap.`,
   starterCode: `def daily_temperatures(temps):
     # TODO: for each day, how many days until a warmer temperature (0 if none)?
-    pass
 `,
   solution: `def daily_temperatures(temps):
     answer = [0] * len(temps)

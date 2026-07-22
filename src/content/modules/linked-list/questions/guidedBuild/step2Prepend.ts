@@ -33,7 +33,6 @@ class LinkedList:
 
     def prepend(self, value):
         # TODO: attach a new node holding value to the front of the list.
-        pass
 
     def to_list(self):
         result = []

@@ -10,8 +10,8 @@ export const theWalkingPattern: LessonSection = {
   },
   body: `## The walking pattern
 
-Almost every linked list method — the ones in the next three stages
-included — is a variation on the same three lines:
+Almost every linked list method you'll write, including the ones coming
+up in the next three stages, is a variation on the same three lines:
 
 \`\`\`python
 node = head
@@ -20,9 +20,9 @@ while node is not None:
     node = node.next
 \`\`\`
 
-Start a pointer at \`head\`, do something at each node, and advance via
-\`node = node.next\` until you fall off the end (\`node is None\`). That's it
-— that's the whole technique. What varies between methods is only:
+Start a pointer at \`head\`, do something at each node, and advance with
+\`node = node.next\` until you fall off the end (\`node is None\`). That's the
+entire technique. What changes from method to method is just:
 
 - **What you do at each node.** \`search\` compares \`node.val\` to a target
   and returns early. \`to_list\` appends \`node.val\` to a result list.
@@ -35,9 +35,9 @@ Start a pointer at \`head\`, do something at each node, and advance via
   \`find_middle\` and \`detect_cycle\` both use a *slow* and a *fast* pointer
   moving at different speeds through the same walk.
 
-If a method feels unfamiliar, come back to this: it's still the same walk,
-just with a different thing happening at each step. The Guided Build stage
-that follows has you write \`append\`, \`prepend\`, \`delete\`, and \`search\`
-back-to-back specifically so this pattern stops feeling like four separate
-tricks and starts feeling like one.`,
+If a method ever feels unfamiliar, come back to this — it's still the
+same walk, just with something different happening at each step. The
+Guided Build stage has you write \`append\`, \`prepend\`, \`delete\`, and
+\`search\` back to back for exactly this reason: so it stops feeling like
+four separate tricks and starts feeling like one.`,
 };

@@ -22,7 +22,6 @@ rescan everything before it" shape — and it's the seed of the classic
 "product of array except self" problem in the drills that follow.`,
   starterCode: `def running_product(nums):
     # TODO: return the running product of nums, one entry per prefix.
-    pass
 `,
   solution: `def running_product(nums):
     result = []

@@ -33,15 +33,12 @@ class CircularLinkedList:
 
     def append(self, value):
         # TODO
-        pass
 
     def to_list(self, limit):
         # TODO
-        pass
 
     def length(self):
         # TODO
-        pass
 `,
   solution: `class CNode:
     def __init__(self, val):

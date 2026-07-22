@@ -20,7 +20,6 @@ Implement \`push(value)\`: add \`value\` to the top of the stack.
 
     def push(self, value):
         # TODO: add value to the top of the stack.
-        pass
 
     def to_list(self):
         return list(self.items)

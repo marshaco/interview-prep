@@ -14,16 +14,17 @@ export const whatIsALinkedList: LessonSection = {
   },
   body: `## What is a linked list?
 
-An array stores its elements in one contiguous block of memory — that's
-what makes \`arr[i]\` O(1): the address of element \`i\` is just
-\`base + i * size\`. It's also why inserting in the middle of an array is
-O(n): everything after the insertion point has to physically shift over.
+An array stores its elements in one contiguous block of memory. That's
+what makes \`arr[i]\` O(1) — the address of element \`i\` is just
+\`base + i * size\`. It's also why inserting in the middle of an array
+costs O(n): everything after the insertion point has to physically shift
+over to make room.
 
-A **linked list** takes the opposite trade-off. Instead of one contiguous
-block, it's a chain of individually-allocated **nodes**, each holding a
-value and a pointer to the next node. Nodes can live anywhere in memory —
-nothing has to shift when you insert or remove one, because you're only
-ever rewiring a couple of pointers.
+A **linked list** takes the opposite trade-off: instead of one contiguous
+block, it's a chain of individually allocated **nodes**, each holding a
+value and a pointer to the next one. The nodes can live anywhere in
+memory. Inserting or removing one doesn't shift anything else — you're
+just rewiring a couple of pointers.
 
 |                     | Array | Linked List |
 |---------------------|-------|-------------|
@@ -32,8 +33,8 @@ ever rewiring a couple of pointers.
 | Insert/delete at tail (no tail pointer) | O(1) | O(n) |
 | Memory layout        | contiguous | scattered, linked by pointers |
 
-Neither is "better" — they're suited to different access patterns. You'll
-feel this trade-off directly in the exercises that follow: \`append\` is
-free at the front and expensive at the back, and there's no way to jump
-straight to "the 5th element" without walking there one node at a time.`,
+Neither one is better in general, they're just suited to different access
+patterns. You'll feel this directly in the exercises ahead: appending at
+the front is free, appending at the back is expensive, and there's no
+shortcut to "the 5th element" — you walk there one node at a time.`,
 };

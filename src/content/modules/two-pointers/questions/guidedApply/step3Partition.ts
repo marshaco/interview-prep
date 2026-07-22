@@ -21,7 +21,6 @@ tracks where the next non-zero value belongs — swap into place whenever
 the read pointer finds one.`,
   starterCode: `def move_zeroes(nums):
     # TODO: return nums with every 0 moved to the end, order otherwise preserved.
-    pass
 `,
   solution: `def move_zeroes(nums):
     result = list(nums)

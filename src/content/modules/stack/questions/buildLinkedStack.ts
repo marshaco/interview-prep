@@ -32,23 +32,18 @@ class Stack:
 
     def push(self, value):
         # TODO
-        pass
 
     def pop(self):
         # TODO
-        pass
 
     def peek(self):
         # TODO
-        pass
 
     def is_empty(self):
         # TODO
-        pass
 
     def to_list(self):
         # TODO: bottom-to-top, so walk from top and reverse.
-        pass
 `,
   solution: `class Node:
     def __init__(self, val):

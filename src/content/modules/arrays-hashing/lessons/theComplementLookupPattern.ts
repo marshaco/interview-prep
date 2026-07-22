@@ -19,8 +19,9 @@ def two_sum_slow(nums, target):
 \`\`\`
 
 The hash-map version flips the question around. Instead of "does some
-*later* number pair with this one," ask "have I already seen the number
-that would pair with this one?" — the **complement**, \`target - nums[i]\`:
+later number pair with this one," it asks "have I already seen the number
+that pairs with this one?" That number is the **complement**:
+\`target - nums[i]\`.
 
 \`\`\`python
 def two_sum(nums, target):
@@ -32,14 +33,13 @@ def two_sum(nums, target):
         seen[n] = i
 \`\`\`
 
-One pass, O(n). The hash map remembers *every value you've already walked
-past, and where*, so by the time you reach the second number of a valid
-pair, its partner is already sitting in the map ready to be looked up in
-O(1).
+One pass, O(n). The hash map remembers every value you've walked past and
+where it was, so by the time you reach the second number of a valid pair,
+its partner is already sitting there waiting, ready to look up in O(1).
 
-This "have I seen the thing that completes this" shape reappears constantly
-once you know to look for it — anywhere a problem asks about *pairs*,
-*complements*, or "does X exist such that X and current combine to
-something," a hash map turning an O(n²) pair-check into an O(n) single pass
-is usually the move.`,
+Once you know to look for it, this shape — "have I seen the thing that
+completes this" — shows up constantly. Anywhere a problem asks about
+pairs, complements, or whether some X combines with the current value to
+make something, turning an O(n²) pair-check into an O(n) single pass with
+a hash map is usually the move.`,
 };

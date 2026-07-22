@@ -20,7 +20,6 @@ def count_frequencies(items):
 first occurrence) so you can count in a single pass with no extra branch.`,
   starterCode: `def count_frequencies(items):
     # TODO: return a dict mapping each item to how many times it appears.
-    pass
 `,
   solution: `def count_frequencies(items):
     counts = {}

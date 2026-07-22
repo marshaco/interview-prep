@@ -20,7 +20,6 @@ Converge from both ends, comparing characters as you go — the moment two
 don't match, it isn't a palindrome.`,
   starterCode: `def is_palindrome_simple(s):
     # TODO: return True if s reads the same forwards and backwards.
-    pass
 `,
   solution: `def is_palindrome_simple(s):
     left, right = 0, len(s) - 1

@@ -28,7 +28,6 @@ class LinkedList:
 
     def append(self, value):
         # TODO: attach a new node holding value to the end of the list.
-        pass
 
     def to_list(self):
         result = []

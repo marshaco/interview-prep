@@ -30,7 +30,43 @@ function stageQuestionItems(stage: Stage): Extract<StageItem, { type: 'question'
   return stage.items.filter((item): item is Extract<StageItem, { type: 'question' }> => item.type === 'question');
 }
 
-/** One question row — used in both the current stage's list and an upcoming stage's expanded list. */
+/** A collapsed stage row that expands to reveal its content — used for both completed stages (so you can always go back and reread/redo them) and upcoming ones. */
+function ExpandableStage({
+  module,
+  stage,
+  attempts,
+  summary,
+  learnLinkLabel,
+}: {
+  module: RoadmapModule;
+  stage: Stage;
+  attempts: Attempt[];
+  summary: string;
+  learnLinkLabel: string;
+}) {
+  const questionItems = stageQuestionItems(stage);
+  return (
+    <details className="group rounded border border-border/50 px-4 py-3">
+      <summary className="cursor-pointer text-sm text-text-muted marker:text-text-muted">{summary}</summary>
+      {stage.type === 'learn' ? (
+        <Link
+          to={`/modules/${module.id}/learn`}
+          className="mt-3 inline-flex rounded border border-border bg-bg-raised px-4 py-2 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {learnLinkLabel}
+        </Link>
+      ) : (
+        <div className="mt-3 flex flex-col gap-2">
+          {questionItems.map((item, itemIndex) => (
+            <ExerciseRow key={item.questionId} moduleId={module.id} stage={stage} item={item} index={itemIndex} attempts={attempts} />
+          ))}
+        </div>
+      )}
+    </details>
+  );
+}
+
+/** One question row — used in both the current stage's list and an upcoming/completed stage's expanded list. */
 function ExerciseRow({
   moduleId,
   stage,
@@ -111,9 +147,13 @@ export function ModuleStepper({ module, attempts, isLearnComplete }: ModuleStepp
           );
         } else if (completed) {
           content = (
-            <div className="rounded border border-border/50 px-4 py-2.5 text-sm text-text-muted">
-              {stage.title} — {stageSummary(stage, attempts)}
-            </div>
+            <ExpandableStage
+              module={module}
+              stage={stage}
+              attempts={attempts}
+              summary={`${stage.title} — ${stageSummary(stage, attempts)}`}
+              learnLinkLabel="Read again →"
+            />
           );
         } else if (isCurrent) {
           const questionItems = stageQuestionItems(stage);
@@ -149,34 +189,14 @@ export function ModuleStepper({ module, attempts, isLearnComplete }: ModuleStepp
           );
         } else {
           // Upcoming — quiet but fully open, every item clickable, nothing disabled.
-          const questionItems = stageQuestionItems(stage);
           content = (
-            <details className="group rounded border border-border/50 px-4 py-3">
-              <summary className="cursor-pointer text-sm text-text-muted marker:text-text-muted">
-                {stage.title} · {stageItemCountLabel(stage)}
-              </summary>
-              {stage.type === 'learn' ? (
-                <Link
-                  to={`/modules/${module.id}/learn`}
-                  className="mt-3 inline-flex rounded border border-border bg-bg-raised px-4 py-2 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  Start →
-                </Link>
-              ) : (
-                <div className="mt-3 flex flex-col gap-2">
-                  {questionItems.map((item, itemIndex) => (
-                    <ExerciseRow
-                      key={item.questionId}
-                      moduleId={module.id}
-                      stage={stage}
-                      item={item}
-                      index={itemIndex}
-                      attempts={attempts}
-                    />
-                  ))}
-                </div>
-              )}
-            </details>
+            <ExpandableStage
+              module={module}
+              stage={stage}
+              attempts={attempts}
+              summary={`${stage.title} · ${stageItemCountLabel(stage)}`}
+              learnLinkLabel="Start →"
+            />
           );
         }
 

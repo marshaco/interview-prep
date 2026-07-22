@@ -23,7 +23,6 @@ export const step3Peek: CodeQuestion = {
 
     def peek(self):
         # TODO: return the top item without removing it.
-        pass
 
     def to_list(self):
         return list(self.items)

@@ -14,8 +14,9 @@ export const twoWaysToBuildAStack: LessonSection = {
   },
   body: `## Two ways to build a stack
 
-A stack is a *behavior contract* (push/pop/peek, LIFO order), not a
-specific memory layout. Two representations satisfy it equally well:
+A stack is defined by its behavior — push, pop, peek, LIFO order — not by
+how it's stored in memory. Two very different representations satisfy
+that behavior equally well.
 
 **Array/list-backed** — keep a plain list, and treat its *end* as the top:
 
@@ -34,9 +35,9 @@ class Stack:
         return self.items[-1]         # O(1)
 \`\`\`
 
-Pushing and popping at the *end* of a Python list is O(1) amortized —
-exactly the reason the top of the stack is the end of the list, not the
-front (popping index 0 would be O(n), shifting everything over).
+Pushing and popping at the end of a Python list is O(1) amortized. That's
+why the top of the stack is the end of the list, not the front — popping
+index 0 is O(n), since everything else has to shift over.
 
 **Linked-list-backed** — keep a \`top\` pointer, and push/pop at the head:
 
@@ -61,11 +62,11 @@ class Stack:
         return value
 \`\`\`
 
-This is exactly \`prepend\`/\`delete-the-head\` from the Linked List module —
-a stack is a linked list where you've restricted yourself to only ever
-touching the head. Both representations give identical *observable*
-behavior; the grading in this module checks behavior, not which one you
-picked. Real interview settings almost always accept either — reach for
-the list-backed version unless you're specifically asked to avoid a
-built-in dynamic array.`,
+This should look familiar: it's \`prepend\` and \`delete-the-head\` from the
+Linked List module. A stack is just a linked list where you've decided to
+only ever touch the head. Both versions behave identically from the
+outside, which is what actually gets graded here, not which one you
+picked. In a real interview, either is normally fine — default to the
+list-backed version unless you're asked specifically to avoid a built-in
+dynamic array.`,
 };

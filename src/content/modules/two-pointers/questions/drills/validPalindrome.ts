@@ -23,7 +23,6 @@ skip-loops do the filtering, no separate cleanup pass over the string
 needed.`,
   starterCode: `def is_palindrome(s):
     # TODO: return True if s is a palindrome, ignoring case and non-alphanumeric characters.
-    pass
 `,
   solution: `def is_palindrome(s):
     left, right = 0, len(s) - 1

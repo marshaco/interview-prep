@@ -22,7 +22,6 @@ Build a frequency map (§ previous lesson) for \`word1\`, then walk
 count lands back at zero.`,
   starterCode: `def is_anagram(word1, word2):
     # TODO: return True if word1 and word2 are anagrams of each other.
-    pass
 `,
   solution: `def is_anagram(word1, word2):
     if len(word1) != len(word2):

@@ -28,7 +28,6 @@ stage.
 
     def is_empty(self):
         # TODO: return True if the stack has no items.
-        pass
 
     def to_list(self):
         return list(self.items)

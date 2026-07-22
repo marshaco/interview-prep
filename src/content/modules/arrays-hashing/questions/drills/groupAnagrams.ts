@@ -22,7 +22,6 @@ Every anagram of a word shares the same sorted-letters string (\`"eat"\`,
 dict key and bucket words into it as you walk the list once.`,
   starterCode: `def group_anagrams(words):
     # TODO: group words that are anagrams of each other.
-    pass
 `,
   solution: `def group_anagrams(words):
     groups = {}

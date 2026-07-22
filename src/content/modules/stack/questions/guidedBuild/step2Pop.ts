@@ -20,7 +20,6 @@ Assume \`pop\` is never called on an empty stack.
 
     def pop(self):
         # TODO: remove and return the top item.
-        pass
 
     def to_list(self):
         return list(self.items)

@@ -26,7 +26,6 @@ the **shorter** line is the only choice that could possibly find
 something better.`,
   starterCode: `def max_area(heights):
     # TODO: return the maximum water a container between two lines can hold.
-    pass
 `,
   solution: `def max_area(heights):
     left, right = 0, len(heights) - 1

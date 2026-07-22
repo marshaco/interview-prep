@@ -27,19 +27,15 @@ every operation stays O(1).
 
     def push(self, value):
         # TODO: push value, and push the new running minimum onto self.mins.
-        pass
 
     def pop(self):
         # TODO: pop from both stacks; return the popped value.
-        pass
 
     def top(self):
         # TODO
-        pass
 
     def get_min(self):
         # TODO
-        pass
 `,
   solution: `class MinStack:
     def __init__(self):

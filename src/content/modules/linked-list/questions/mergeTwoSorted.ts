@@ -24,7 +24,6 @@ def merge_two_sorted(head1, head2):
 
 def merge_two_sorted(head1, head2):
     # TODO: merge the two sorted lists into one sorted list.
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

@@ -23,7 +23,6 @@ exactly one value remains on the stack — the answer. Division truncates
 toward zero (so \`-7 / 2\` is \`-3\`, not \`-4\`).`,
   starterCode: `def eval_rpn(tokens):
     # TODO: evaluate the postfix expression and return the result.
-    pass
 `,
   solution: `def eval_rpn(tokens):
     stack = []

@@ -25,7 +25,6 @@ def delete_value(head, value):
 
 def delete_value(head, value):
     # TODO: remove the first node whose .val == value, if any.
-    pass
 `,
   solution: `class ListNode:
     def __init__(self, val=0, next=None):

@@ -23,7 +23,6 @@ at each index. No division means a zero anywhere in the input can't break
 the calculation.`,
   starterCode: `def product_except_self(nums):
     # TODO: return result where result[i] = product of every element except nums[i].
-    pass
 `,
   solution: `def product_except_self(nums):
     n = len(nums)

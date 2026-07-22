@@ -20,7 +20,6 @@ Track what you've seen in a \`set\` rather than re-scanning a list — that's
 the difference between an O(n²) and an O(n) solution here.`,
   starterCode: `def has_duplicate(nums):
     # TODO: return True if any value appears more than once.
-    pass
 `,
   solution: `def has_duplicate(nums):
     seen = set()

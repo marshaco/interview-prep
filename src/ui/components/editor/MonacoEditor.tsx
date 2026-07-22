@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import Editor, { type OnMount } from '@monaco-editor/react';
+import Editor, { type BeforeMount, type OnMount } from '@monaco-editor/react';
+import { registerPythonTheme } from './pythonMonacoTheme';
 
 interface MonacoEditorProps {
   value: string;
@@ -25,6 +26,10 @@ export function MonacoEditor({ value, onChange, onRun, onSubmit, onSave }: Monac
     onSaveRef.current = onSave;
   }, [onSave]);
 
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    registerPythonTheme(monaco);
+  };
+
   const handleMount: OnMount = (editor, monaco) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- monaco-editor's own .d.ts isn't fully resolved by eslint's type-aware parser here; tsc typechecks this file cleanly.
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
@@ -44,8 +49,9 @@ export function MonacoEditor({ value, onChange, onRun, onSubmit, onSave }: Monac
     <Editor
       height="100%"
       language="python"
-      theme="vs-dark"
+      theme="triecode-dark"
       value={value}
+      beforeMount={handleBeforeMount}
       onMount={handleMount}
       onChange={(nextValue) => onChange(nextValue ?? '')}
       options={{

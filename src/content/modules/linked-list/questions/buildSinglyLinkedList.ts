@@ -40,23 +40,18 @@ class LinkedList:
 
     def append(self, value):
         # TODO
-        pass
 
     def prepend(self, value):
         # TODO
-        pass
 
     def delete(self, value):
         # TODO
-        pass
 
     def search(self, value):
         # TODO
-        pass
 
     def to_list(self):
         # TODO
-        pass
 `,
   solution: `class Node:
     def __init__(self, val):

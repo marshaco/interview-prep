@@ -200,9 +200,7 @@ export function HomePage() {
         </div>
       )}
 
-      <p className="mb-4 text-xs text-text-muted">Suggested path — everything is open.</p>
-
-      <div ref={containerRef} className="relative flex flex-col gap-10">
+      <div ref={containerRef} className="relative mt-2 flex flex-col gap-10">
         <svg className="pointer-events-none absolute inset-0 hidden md:block" width="100%" height="100%">
           {edges.map(({ source, target }) => {
             const s = positions.get(source);

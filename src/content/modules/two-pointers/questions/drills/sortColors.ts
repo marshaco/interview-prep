@@ -24,7 +24,6 @@ the 2s region). Swap \`0\`s down to \`low\`, swap \`2\`s up to \`high\`, and
 leave \`1\`s where \`mid\` finds them.`,
   starterCode: `def sort_colors(nums):
     # TODO: sort nums in place (0s, then 1s, then 2s) in a single pass.
-    pass
 `,
   solution: `def sort_colors(nums):
     low, mid, high = 0, 0, len(nums) - 1

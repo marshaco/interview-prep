@@ -39,7 +39,6 @@ class LinkedList:
 
     def delete(self, value):
         # TODO: remove the first node whose .val == value, if any.
-        pass
 
     def to_list(self):
         result = []

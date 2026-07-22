@@ -22,7 +22,6 @@ the string is invalid. A stack is the natural fit here because the
 *most recently opened* bracket must be the *next one closed*.`,
   starterCode: `def is_valid(s):
     # TODO: return True if every bracket in s is properly matched and nested.
-    pass
 `,
   solution: `def is_valid(s):
     pairs = {')': '(', ']': '[', '}': '{'}

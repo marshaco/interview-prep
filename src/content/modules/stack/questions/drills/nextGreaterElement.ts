@@ -23,7 +23,6 @@ top. Record every answer you find in a map, then look each \`nums1\` value
 up at the end.`,
   starterCode: `def next_greater_element(nums1, nums2):
     # TODO: for each value in nums1, find its next greater element in nums2 (-1 if none).
-    pass
 `,
   solution: `def next_greater_element(nums1, nums2):
     next_greater = {}

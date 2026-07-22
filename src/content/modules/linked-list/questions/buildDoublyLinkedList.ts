@@ -36,23 +36,18 @@ class DoublyLinkedList:
 
     def append(self, value):
         # TODO
-        pass
 
     def prepend(self, value):
         # TODO
-        pass
 
     def delete(self, value):
         # TODO
-        pass
 
     def to_list_forward(self):
         # TODO
-        pass
 
     def to_list_backward(self):
         # TODO
-        pass
 `,
   solution: `class DNode:
     def __init__(self, val):
