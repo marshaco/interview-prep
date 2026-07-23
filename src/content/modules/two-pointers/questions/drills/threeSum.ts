@@ -122,4 +122,5 @@ never produced twice.`,
       },
     ],
   },
+  reviewable: true,
 };

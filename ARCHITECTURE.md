@@ -11,8 +11,10 @@ A personal interview-preparation tool that teaches fluency in data structures an
 
 The roadmap is organised into **two categories**, each with its own learning template:
 
-- **Data Structures** (`kind: 'data_structure'`) — you build the structure itself, then drill its methods. Full 5-stage pipeline: Learn → Guided Build → Independent Build → Method Drills → Interview Mode.
-- **Algorithms** (`kind: 'algorithm'`) — there is nothing to "build"; you learn the technique and apply it to scaffolded problems. Pipeline: Learn → Guided Apply → Algorithm Drills → Interview Mode.
+- **Data Structures** (`kind: 'data_structure'`) — you build the structure itself, then drill its methods. 4-stage pipeline: Learn → Guided Build → Independent Build → Method Drills.
+- **Algorithms** (`kind: 'algorithm'`) — there is nothing to "build"; you learn the technique and apply it to scaffolded problems. Pipeline: Learn → Guided Apply → Algorithm Drills.
+
+A standalone Interview Mode stage/route existed early on but was removed: the Review system (§13) — cold solve, no hints, graded on submit, across every already-solved exercise — absorbed its role entirely, and does it on a schedule instead of on demand.
 
 The full 18-module catalog (§4.1) ships as **data** in Phase 1 — every node, edge, skill list, and stage skeleton is defined and rendered on the roadmap from day one. Only two modules ship with *content* in V1, one of each kind:
 
@@ -156,8 +158,10 @@ export type StageType =
   | 'independent_build'  // data_structure only
   | 'method_drills'      // data_structure only
   | 'guided_apply'       // algorithm only — scaffolded walkthrough of the technique
-  | 'algorithm_drills'   // algorithm only — apply technique to fresh problems
-  | 'interview_mode';    // both kinds
+  | 'algorithm_drills';  // algorithm only — apply technique to fresh problems
+// No 'interview_mode' — the review system (§13) absorbed that role and
+// isn't a stage in any module's content; it operates across every already-
+// solved reviewable exercise on its own schedule instead.
 
 export interface Stage {
   type: StageType;
@@ -404,24 +408,9 @@ export function computeSkillScore(skillId: SkillId, questions: CodeQuestion[], a
 
 `ProgressRing` (§10) renders `computeModuleMastery`'s 0–1 output directly as a percentage — never raw solved/total — so a module with 8 easy passes and 2 hint-heavy near-misses reads differently from one with 10 clean passes, even at the same solved count.
 
-### 7.3 Spaced repetition (SM-2-lite, per skill)
+### 7.3 Spaced repetition
 
-```ts
-export interface ReviewRecord {
-  skillId: SkillId;
-  ease: number;          // 1.3 – 2.8
-  intervalDays: number;
-  dueAt: string;         // ISO
-  lapses: number;
-}
-```
-
-- Grade an attempt into quality 0–5 from the scorecard (and hint usage).
-- quality < 3 → lapse: interval resets to 1 day, ease −0.2 (floor 1.3).
-- quality ≥ 3 → interval ×= ease; ease adjusts ±0.05–0.1 by quality.
-- **Today's Review** = due records sorted by (skill score asc — via `computeSkillScore`, §7.2 — then overdue-days desc), capped at a configurable daily size. Reviewing a skill serves a randomly selected question tagged with that skill that the user hasn't seen most recently — cheap anti-memorization.
-
-The scheduler is a pure function `(record, quality, now) → record`, property-tested in Vitest (intervals grow monotonically on success, reset on lapse, ease stays within bounds).
+**Superseded (Review system):** the per-skill SM-2-lite scheduler originally described in this subsection — `ReviewRecord { skillId, ease, intervalDays, dueAt, lapses }`, `buildTodaysReview` picking one random question per due skill — is gone. The reviewable unit is the exercise, not the skill, and scheduling is a fixed interval ladder rather than an ease factor. See §13 for the current design; the review-urgency field `selectNextAction` (§10.5) reads is now `ReviewState.dueAt`, not a skill-level record.
 
 ### 7.4 Streaks
 
@@ -440,8 +429,8 @@ export interface StorageAdapter {
   updateAttemptTags(attemptId: string, tags: AttemptTag[]): Promise<void>;
   getDraft(questionId: QuestionId): Promise<Draft | null>;
   saveDraft(d: Draft): Promise<void>;
-  getReviewRecords(): Promise<ReviewRecord[]>;
-  upsertReviewRecord(r: ReviewRecord): Promise<void>;
+  getReviewStates(): Promise<ReviewState[]>;
+  upsertReviewState(r: ReviewState): Promise<void>;
   getLearnCompletions(): Promise<LearnCompletion[]>;
   /** Idempotent — marking an already-complete module complete again is a no-op update. */
   markLearnComplete(moduleId: ModuleId): Promise<void>;
@@ -458,7 +447,7 @@ export interface StorageAdapter {
 
 **Superseded (Triecode UI overhaul):** `getMastery`/`upsertMastery` and the `mastery` table are gone — mastery is a pure computation over `attempts` now (§7.2), nothing to store. Added instead: `updateAttemptTags` (post-fail self-tags, §10) and `getLearnCompletions`/`markLearnComplete` (one row per module whose Learn stage was explicitly marked complete — feeds mastery's Learn exercise-equivalent and `selectNextAction`, §10).
 
-Dexie tables mirror these entities 1:1, keyed and indexed for the queries above (`attempts` indexed by `questionId` and `createdAt`; `reviewRecords` keyed by `skillId`; `learnCompletions` keyed by `moduleId`). Content is **not** stored in the DB — it ships with the bundle; the DB stores only user-generated state referencing content by stable string ids. That makes content updates a redeploy, never a data migration.
+Dexie tables mirror these entities 1:1, keyed and indexed for the queries above (`attempts` indexed by `questionId` and `createdAt`; `reviewStates` keyed by `questionId`, §13; `learnCompletions` keyed by `moduleId`). Content is **not** stored in the DB — it ships with the bundle; the DB stores only user-generated state referencing content by stable string ids. That makes content updates a redeploy, never a data migration.
 
 `ExportBundleV1` is a versioned JSON envelope (`{ schemaVersion: 1, exportedAt, tables: {...} }`). Import validates the version and refuses unknown ones. This is the manual laptop↔desktop sync story and, later, the seed data for first server sync.
 
@@ -496,7 +485,7 @@ export interface InteractiveFigureBinding { kind: 'stack_push_pop' }  // more ki
 Every route uses exactly one of:
 
 - **`AppShell`** — persistent nav (wordmark + Home + Review), ~1100px centered column. Used by "browse/plan" screens: Home, Module.
-- **`FocusShell`** — a single "← back to {origin}" link, full-viewport content, nav recedes. Used by "do the work" screens: Learn, the question editor (including Interview Mode and Guided Build/Apply steps).
+- **`FocusShell`** — a single "← back to {origin}" link, full-viewport content, nav recedes. Used by "do the work" screens: Learn, the question editor (including Guided Build/Apply steps and review sessions, §13). The back action is usually a route (`backHref`); a review session instead passes `onBack` so "← End session" ends into the in-page summary state rather than navigating away and losing it.
 
 `/roadmap` and `/dashboard` redirect to `/` — both pages merged into Home (§10.3).
 
@@ -538,15 +527,13 @@ export type NextAction =
 export function selectNextAction(snapshot: ProgressSnapshot): NextAction
 ```
 
-Pure, unit-tested, takes a full `ProgressSnapshot` (no storage access itself). V1 policy: due reviews win; otherwise the first incomplete exercise in ladder order within the first incomplete module in DAG order (`orderModulesByDag`, same depth computation Home's layout uses). **Consumed by exactly three places** — Home's hero, Home's frontier ring highlighting, and the Module page's Up-next card — and it only ever recommends; no consumer may use its output to disable anything. Phase 5's real SM-2-lite due check already backs the review-urgency policy; deeper exercise-ordering heuristics can replace the DAG-order fallback later without any consumer changing, by design.
+Pure, unit-tested, takes a full `ProgressSnapshot` (no storage access itself). V1 policy: due reviews win; otherwise an in-progress module wins over an untouched one, DAG order (`orderModulesByDag`, same depth computation Home's layout uses) breaking ties within each group and acting as the sole ordering when nothing has been started. **Consumed by exactly three places** — Home's hero, Home's frontier ring highlighting, and the Module page's Up-next card — and it only ever recommends; no consumer may use its output to disable anything. The review-urgency check reads the exercise-level `ReviewState.dueAt` (§13); a future SM-2-style scheduler swaps in behind that same field, and deeper exercise-ordering heuristics can replace the DAG-order fallback, without any consumer changing, by design.
 
 ### 10.6 Question player (editor)
 
 Split pane: prompt/hints left (bounded width, not one fixed magic number), Monaco right, a fixed-height Results strip (muted "Results" label, so the layout doesn't reflow between empty and populated) at the bottom. Run (visible tests) / Submit (full grade, Cmd/Ctrl+Shift+Enter as well as the button) / Reset (Cmd/Ctrl+Enter still runs); both shortcuts shown subtly on their buttons. After a passing Submit, "Compare with reference solution" reveals `CodeQuestion.solution`. After a failing Submit, four optional one-tap self-tags (Edge case / Off-by-one / Wrong approach / Syntax) persist against that attempt via `updateAttemptTags` (§8) — the attempt record is otherwise immutable. Pyodide's `warmup()` is scheduled on `requestIdleCallback` from the app root rather than run synchronously at mount, so it doesn't sit on the critical rendering path but still fires regardless of entry route (§6.2's "warmup on app start" invariant).
 
-**Interview Mode** is a deliberate toolbar button ("Start interview mode →"), not a small corner link — activating it is a real choice, not something you can fat-finger. Same player, chrome stripped: no hints, timer visible, grade shown only after submit.
-
-**Review** — the daily queue, one question at a time; a progress bar plus a per-skill chip strip (current/done/upcoming) is the single progress display — no redundant textual "N of M" counter alongside it.
+**Review sessions** reuse this same player with three chrome differences — hints panel doesn't render, the chip strip scopes to the session queue instead of a module's exercise list, and the back link reads "← End session" — detailed in §13. There is no separate Interview Mode: review sessions (cold, no hints, graded on submit) absorbed that role entirely.
 
 **Settings** (Phase 8, not yet built) — theme, editor prefs, export/import, wipe data.
 
@@ -588,6 +575,76 @@ Phase 1 grows slightly (½–1 wk → 1 wk) to absorb authoring the full catalog
 
 ---
 
+## 13. Review System
+
+Supersedes §7.3's per-skill SM-2-lite scheduler. The reviewable unit is the **exercise** (not the skill), scheduled on a **fixed interval ladder** (not an ease factor), taken in timed, interleaved **sessions** (not one question at a time) — this section is the live design; §7.3 is a pointer here.
+
+### 13.1 The review pool
+
+Only exercises passed at least once enter the pool — Learn stages never do (re-reading is weak review). Reviewability is a required content field:
+
+```ts
+// content/types.ts — CodeQuestion
+reviewable: boolean;             // guided-build/guided-apply steps: false; independent-build, method-drill, algorithm-drill: true
+reviewFastThresholdMs?: number;  // overrides DEFAULT_FAST_THRESHOLD_MS (10 min) for this exercise's "fast pass" check
+```
+
+A convention, not a computed default — every question sets it explicitly (guided steps `false`, everything else `true`), and `content/validate.ts` asserts the field is present and boolean. No `if (stage === ...)` branch anywhere reads stage type to infer it. A review is the full solve: starter code, run, submit, graded by the same harness as first-time practice — no diffing, no shortened variant.
+
+### 13.2 Scheduler — fixed interval ladder
+
+```ts
+// engine/srs/scheduler.ts
+export const RUNG_INTERVALS_DAYS = [1, 3, 7, 14, 30, 60] as const; // rung 0-5
+export function enterReview(questionId: QuestionId, now: string): ReviewState
+export function scheduleReview(state: ReviewState, outcome: ReviewOutcome, now: string): ReviewState
+
+// storage/types.ts
+export interface ReviewState {
+  questionId: QuestionId;
+  rung: number;       // 0-5, index into RUNG_INTERVALS_DAYS
+  dueAt: string;       // ISO
+  lapses: number;
+  lastReviewedAt: string; // ISO
+}
+```
+
+- A first-ever pass of a `reviewable` exercise (outside a review session) calls `enterReview`: rung 0, due tomorrow.
+- A review outcome is graded on objective telemetry only — no self-rating anywhere in the UI:
+  - Clean pass (first submit passes) **and** fast (under `reviewFastThresholdMs` ?? 10 min): advance 2 rungs.
+  - Clean pass, not fast: advance 1 rung.
+  - Scraped pass (multiple submits before passing): stay on the same rung, rescheduled from `now`.
+  - Failed (abandoned or skipped without passing): lapse to rung 0, `lapses += 1`.
+  - Capped at rung 5 (60 days) — a clean fast pass at the cap stays at 60 days.
+- Pure, clock-free (`now` passed in), unit-tested for every rung transition, lapse, cap, and due-date computation. This is the same kind of seam §7.2/§10.5 already use: a future SM-2-style algorithm can replace the ladder inside `scheduleReview` without any consumer (the session player, `selectNextAction`) changing.
+- **Persistence:** `reviewStates` Dexie table (`v4`, keyed by `questionId`), replacing the dropped `reviewRecords` table. `attempts` gained a `context: 'practice' | 'review'` field (default `'practice'`) so review-session attempts are distinguishable in the same table rather than a parallel one.
+
+### 13.3 Sessions
+
+`engine/srs/queue.ts`'s `buildReviewQueue(reviewStates, questions, todayIso, cap)` builds a session: every due exercise, sorted most-overdue-first (ties broken by lower rung — fragile memories before stable ones), interleaved across modules via one adjacent-swap pass (`do not over-engineer beyond one pass` — a same-module pair with nothing later to swap with just stays adjacent), capped at `DEFAULT_SESSION_CAP` (10; `QUICK_SESSION_CAP` = 5 is the same ordering, just the first 5).
+
+In-session, `ui/components/review/ReviewSessionPlayer.tsx` reuses the standard question player (§10.6) with three chrome differences: hints panel doesn't render (`hideHints`); the chip strip scopes to the session queue in queue order, not a module's exercise list; and the top bar/back-link read `Review · {i} of {N} — {exercise} ({module})` / `← End session`, the latter an in-page `onBack` callback (not a route) so ending early routes into the summary state with un-attempted items simply left due, rather than navigating away and losing the in-progress outcome list. A provenance block above the prompt — module name, `{nth} review · last reviewed {n} days ago`, `Pass → next review in {interval} days` — makes the interval ladder legible on every card; it needs only data already in `ReviewState` plus a count of prior `context: 'review'` attempts.
+
+Per-item outcomes: a pass reschedules (§13.2) and auto-advances (after a brief pause so the passing scorecard is visible) to the next item. A failed submit doesn't advance — the existing post-fail self-tag UI lets the user keep trying; "Skip" is a deliberate two-step action (first reveals `CodeQuestion.solution`, second click confirms) so a lapse is never a silent side effect of clicking away. An ad-hoc drill item that wasn't actually due (the weakest-module drill, §13.4) never lapses on failure — only a real due review's schedule is touched — but still reschedules normally on a pass, since "a review is a review."
+
+### 13.4 The Review page — three states
+
+`ui/routes/ReviewPage.tsx`, `AppShell`:
+
+- **Due** — hero (`{N} due — Start session →`, ~N×6 min estimate, `Quick 5` when N > 5) plus a read-only queue-preview table (exercise, module, last reviewed, current interval) for trust; the action is the session, not cherry-picking rows.
+- **Caught up** — never blank. `{n} due tomorrow · {n} due this week` when the pool is non-empty, with a `Drill weakest module →` escape hatch (up to 5 reviewable, already-solved questions from the lowest-mastery module, regardless of due status). When the pool is empty entirely (nothing solved yet), the forecast is replaced by one explanatory sentence and a `Continue practicing →` link via `selectNextAction`.
+- **Summary** — passed/lapsed lists, mastery deltas per touched module (`ProgressRing` animating old → new value — the only place rings animate outside normal state change), a next-due forecast, and one primary action (`Done →` to Home, or `Continue practicing →` if nothing else is due and there's an active frontier).
+
+A Module-page row for a due exercise gets a small accent dot + "due for review" secondary text and links straight to `/review?start={questionId}`, which auto-starts a single-item session for it (§10.4) — the only other module-page change.
+
+### 13.5 Integration
+
+- `selectNextAction` (§10.5): due reviews win, reading `ReviewState.dueAt` directly.
+- **Mastery** (§7.2): a lapse — a failed `context: 'review'` attempt after the exercise already passed once — multiplies `computeExerciseScore`'s result by 0.8 (same 0.4 floor), read straight from attempt history rather than a separate counter, so review outcomes and mastery stay driven by the same source of truth.
+- No self-rating buttons, ease factors, or scheduling controls anywhere — the system schedules, the user solves. No notifications/emails/reminders. No streak mechanics beyond the existing stats strip.
+
+---
+
 ## Appendix A — Future Sync Schema (Postgres / Drizzle, not built in V1)
 
 Target mapping when accounts arrive. Local tables translate 1:1 with a `user_id` column added; content stays in-repo (referenced by string id), so only user state syncs.
@@ -602,8 +659,8 @@ drafts           (user_id fk, question_id text, code text, updated_at,
                   pk (user_id, question_id))
 skill_mastery    (user_id fk, skill_id text, score real, attempts int,
                   updated_at, pk (user_id, skill_id))
-review_records   (user_id fk, skill_id text, ease real, interval_days real,
-                  due_at timestamptz, lapses int, pk (user_id, skill_id))
+review_states    (user_id fk, question_id text, rung int, due_at timestamptz,
+                  lapses int, last_reviewed_at timestamptz, pk (user_id, question_id))
 notes            (id uuid pk, user_id fk, question_id text, body text, created_at)
 bookmarks        (user_id fk, question_id text, created_at, pk (user_id, question_id))
 day_log          (user_id fk, day date, pk (user_id, day))

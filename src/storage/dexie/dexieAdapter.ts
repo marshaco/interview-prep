@@ -9,7 +9,7 @@ import type {
   ExportBundleV1,
   LearnCompletion,
   Note,
-  ReviewRecord,
+  ReviewState,
 } from '../types';
 import { applyImportBundle, buildExportBundle, validateExportBundle } from '../exchange';
 import { AppDatabase } from './db';
@@ -45,12 +45,12 @@ export class DexieAdapter implements StorageAdapter {
     await this.db.drafts.put(d);
   }
 
-  async getReviewRecords(): Promise<ReviewRecord[]> {
-    return this.db.reviewRecords.toArray();
+  async getReviewStates(): Promise<ReviewState[]> {
+    return this.db.reviewStates.toArray();
   }
 
-  async upsertReviewRecord(r: ReviewRecord): Promise<void> {
-    await this.db.reviewRecords.put(r);
+  async upsertReviewState(r: ReviewState): Promise<void> {
+    await this.db.reviewStates.put(r);
   }
 
   async getLearnCompletions(): Promise<LearnCompletion[]> {
@@ -104,7 +104,7 @@ export class DexieAdapter implements StorageAdapter {
     const tables = [
       this.db.attempts,
       this.db.drafts,
-      this.db.reviewRecords,
+      this.db.reviewStates,
       this.db.notes,
       this.db.bookmarks,
       this.db.learnCompletions,

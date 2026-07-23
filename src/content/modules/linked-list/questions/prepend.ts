@@ -54,4 +54,5 @@ def prepend(head, value):
       { id: 'duplicate-values', group: 'edge', args: [[1, 1, 1], 1], expected: [1, 1, 1, 1], comparator: 'deep', label: 'duplicate values' },
     ],
   },
+  reviewable: true,
 };

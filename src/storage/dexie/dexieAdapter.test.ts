@@ -31,6 +31,7 @@ function fakeAttempt(overrides: Partial<Attempt> = {}): Attempt {
     hintsUsed: 0,
     durationMs: 1000,
     createdAt: '2026-01-01T00:00:00.000Z',
+    context: 'practice',
     ...overrides,
   };
 }
@@ -102,7 +103,7 @@ describe('DexieAdapter', () => {
     const adapter = freshAdapter();
     await adapter.saveAttempt(fakeAttempt({ id: 'a1' }));
     await adapter.saveDraft({ questionId: 'linked-list/append', code: 'draft', updatedAt: '2026-01-01T00:00:00.000Z' });
-    await adapter.upsertReviewRecord({ skillId: 'linked-list/append', ease: 2.5, intervalDays: 3, dueAt: '2026-01-05T00:00:00.000Z', lapses: 0 });
+    await adapter.upsertReviewState({ questionId: 'linked-list/append', rung: 1, dueAt: '2026-01-05T00:00:00.000Z', lapses: 0, lastReviewedAt: '2026-01-02T00:00:00.000Z' });
     await adapter.saveNote({ id: 'n1', questionId: 'linked-list/append', body: 'note', createdAt: '2026-01-01T00:00:00.000Z' });
     await adapter.toggleBookmark('linked-list/append');
     await adapter.markLearnComplete('linked-list');
@@ -119,7 +120,7 @@ describe('DexieAdapter', () => {
 
     expect(await adapter.getAttempts()).toHaveLength(1);
     expect(await adapter.getDraft('linked-list/append')).not.toBeNull();
-    expect(await adapter.getReviewRecords()).toHaveLength(1);
+    expect(await adapter.getReviewStates()).toHaveLength(1);
     expect(await adapter.getNotes('linked-list/append')).toHaveLength(1);
     expect(await adapter.getBookmarks()).toHaveLength(1);
     expect(await adapter.getLearnCompletions()).toHaveLength(1);

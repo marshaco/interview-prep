@@ -67,4 +67,5 @@ def append(head, value):
       { id: 'duplicate-value', group: 'edge', args: [[7], 7], expected: [7, 7], comparator: 'deep', label: 'appended value duplicates existing node' },
     ],
   },
+  reviewable: true,
 };

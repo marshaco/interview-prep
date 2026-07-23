@@ -84,4 +84,5 @@ needed.`,
       },
     ],
   },
+  reviewable: true,
 };

@@ -61,4 +61,5 @@ def reverse_list(head):
       { id: 'duplicate-values', group: 'edge', args: [[7, 7]], expected: [7, 7], comparator: 'deep', label: 'duplicate values' },
     ],
   },
+  reviewable: true,
 };

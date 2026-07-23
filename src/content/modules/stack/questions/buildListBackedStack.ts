@@ -140,4 +140,5 @@ This is the same behavior as the Guided Build stage, assembled in one go.
       },
     ],
   },
+  reviewable: true,
 };

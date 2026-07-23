@@ -77,4 +77,5 @@ toward the middle, until they meet.`,
       },
     ],
   },
+  reviewable: false,
 };

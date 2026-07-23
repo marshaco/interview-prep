@@ -88,4 +88,5 @@ the calculation.`,
       },
     ],
   },
+  reviewable: true,
 };

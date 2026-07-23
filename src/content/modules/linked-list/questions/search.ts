@@ -59,4 +59,5 @@ def search(head, value):
       { id: 'duplicate-values', group: 'edge', args: [[1, 1, 1], 1], expected: true, comparator: 'deep', label: 'duplicate values' },
     ],
   },
+  reviewable: true,
 };

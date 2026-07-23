@@ -61,4 +61,5 @@ def find_middle(head):
       { id: 'two-nodes', group: 'edge', args: [[1, 2]], expected: 2, comparator: 'deep', label: 'two nodes' },
     ],
   },
+  reviewable: true,
 };

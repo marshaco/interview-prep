@@ -2,10 +2,10 @@ import type { AppDatabase } from './dexie/db';
 import type { ExportBundleV1 } from './types';
 
 export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1> {
-  const [attempts, drafts, reviewRecords, notes, bookmarks, learnCompletions, dayLogRows] = await Promise.all([
+  const [attempts, drafts, reviewStates, notes, bookmarks, learnCompletions, dayLogRows] = await Promise.all([
     db.attempts.toArray(),
     db.drafts.toArray(),
-    db.reviewRecords.toArray(),
+    db.reviewStates.toArray(),
     db.notes.toArray(),
     db.bookmarks.toArray(),
     db.learnCompletions.toArray(),
@@ -18,7 +18,7 @@ export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1
     tables: {
       attempts,
       drafts,
-      reviewRecords,
+      reviewStates,
       notes,
       bookmarks,
       learnCompletions,
@@ -52,13 +52,15 @@ export function validateExportBundle(data: unknown): ExportBundleV1 {
 }
 
 export async function applyImportBundle(db: AppDatabase, bundle: ExportBundleV1): Promise<void> {
-  const tables = [db.attempts, db.drafts, db.reviewRecords, db.notes, db.bookmarks, db.learnCompletions, db.dayLog];
+  const tables = [db.attempts, db.drafts, db.reviewStates, db.notes, db.bookmarks, db.learnCompletions, db.dayLog];
   await db.transaction('rw', tables, async () => {
     await Promise.all(tables.map((table) => table.clear()));
     await Promise.all([
       db.attempts.bulkAdd(bundle.tables.attempts),
       db.drafts.bulkAdd(bundle.tables.drafts),
-      db.reviewRecords.bulkAdd(bundle.tables.reviewRecords),
+      // Older exports predate reviewStates (they used a per-skill reviewRecords
+      // table that no longer exists) — fall back to empty rather than throwing.
+      db.reviewStates.bulkAdd(bundle.tables.reviewStates ?? []),
       db.notes.bulkAdd(bundle.tables.notes),
       db.bookmarks.bulkAdd(bundle.tables.bookmarks),
       // Older exports predate learnCompletions — fall back to empty rather than throwing.

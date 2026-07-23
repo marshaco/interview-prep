@@ -10,12 +10,12 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ProgressRing } from '../components/common/ProgressRing';
 import { ModuleStepper } from '../components/module/ModuleStepper';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import type { Attempt, ReviewRecord } from '../../storage/types';
+import type { Attempt, ReviewState } from '../../storage/types';
 import type { ModuleId } from '../../content/types';
 
 interface ModulePageData {
   attempts: Attempt[];
-  reviewRecords: ReviewRecord[];
+  reviewStates: ReviewState[];
   learnCompletions: Set<ModuleId>;
 }
 
@@ -30,11 +30,11 @@ export function ModulePage() {
     let cancelled = false;
     void Promise.all([
       storageAdapter.getAttempts(),
-      storageAdapter.getReviewRecords(),
+      storageAdapter.getReviewStates(),
       storageAdapter.getLearnCompletions(),
-    ]).then(([attempts, reviewRecords, learnCompletions]) => {
+    ]).then(([attempts, reviewStates, learnCompletions]) => {
       if (cancelled) return;
-      setData({ attempts, reviewRecords, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)) });
+      setData({ attempts, reviewStates, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)) });
     });
     return () => {
       cancelled = true;
@@ -65,6 +65,7 @@ export function ModulePage() {
   const dependents = modules.filter((m) => m.prerequisites.includes(module.id)).map((m) => m.title);
   const isLearnComplete = data.learnCompletions.has(module.id);
   const progress = computeModuleMastery(module, data.attempts, isLearnComplete);
+  const today = localDateIso(new Date());
 
   // Same ProgressSnapshot Home uses — the ring on this header is the same
   // identity element, so it must agree on which module is the frontier.
@@ -72,9 +73,9 @@ export function ModulePage() {
     modules,
     questions,
     attempts: data.attempts,
-    reviewRecords: data.reviewRecords,
+    reviewStates: data.reviewStates,
     learnCompletions: data.learnCompletions,
-    todayIso: localDateIso(new Date()),
+    todayIso: today,
   });
   const isFrontier = (nextAction.kind === 'exercise' || nextAction.kind === 'learn') && nextAction.moduleId === module.id;
 
@@ -97,7 +98,13 @@ export function ModulePage() {
         </div>
       </div>
 
-      <ModuleStepper module={module} attempts={data.attempts} isLearnComplete={isLearnComplete} />
+      <ModuleStepper
+        module={module}
+        attempts={data.attempts}
+        isLearnComplete={isLearnComplete}
+        reviewStates={data.reviewStates}
+        todayIso={today}
+      />
     </AppShell>
   );
 }

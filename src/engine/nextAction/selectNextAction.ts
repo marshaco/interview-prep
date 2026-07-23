@@ -1,6 +1,6 @@
 import { orderModulesByDag } from '../roadmap/dag';
 import type { CodeQuestion, ModuleId, QuestionId, RoadmapModule, Stage, StageType } from '../../content/types';
-import type { Attempt, ReviewRecord } from '../../storage/types';
+import type { Attempt, ReviewState } from '../../storage/types';
 
 export type NextAction =
   | { kind: 'review'; dueCount: number }
@@ -12,7 +12,7 @@ export interface ProgressSnapshot {
   modules: RoadmapModule[];
   questions: CodeQuestion[];
   attempts: Attempt[];
-  reviewRecords: ReviewRecord[];
+  reviewStates: ReviewState[];
   learnCompletions: ReadonlySet<ModuleId>;
   todayIso: string;
 }
@@ -93,14 +93,15 @@ function nextStepInModule(module: RoadmapModule, snapshot: ProgressSnapshot): Ne
  * the sole ordering when nothing has been started yet.
  *
  * This function only ever recommends — it has no notion of "locked" and
- * no consumer may use its output to disable navigation. Phase 5 replaces
- * the review-urgency policy with the real SM-2-lite due check (already
- * true here) and may add smarter exercise ordering; the signature (a full
- * ProgressSnapshot in, one NextAction out) is designed to absorb that
- * without consumers changing.
+ * no consumer may use its output to disable navigation. The review-urgency
+ * check reads the fixed-interval-ladder `ReviewState` due dates (Review
+ * system spec §2); a future SM-2-style scheduler swaps in behind the same
+ * `dueAt` field, and smarter exercise ordering can layer on top, without
+ * this function's signature (a full ProgressSnapshot in, one NextAction
+ * out) needing to change.
  */
 export function selectNextAction(snapshot: ProgressSnapshot): NextAction {
-  const dueCount = snapshot.reviewRecords.filter((r) => r.dueAt <= snapshot.todayIso).length;
+  const dueCount = snapshot.reviewStates.filter((r) => r.dueAt <= snapshot.todayIso).length;
   if (dueCount > 0) {
     return { kind: 'review', dueCount };
   }

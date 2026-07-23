@@ -13,6 +13,7 @@ function attempt(questionId: string, createdAt: string, overall = 100): Attempt 
     hintsUsed: 0,
     durationMs: 0,
     createdAt,
+    context: 'practice',
   };
 }
 

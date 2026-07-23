@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { selectNextAction, type ProgressSnapshot } from './selectNextAction';
 import type { CodeQuestion, RoadmapModule } from '../../content/types';
-import type { Attempt, ReviewRecord } from '../../storage/types';
+import type { Attempt, ReviewState } from '../../storage/types';
 
 const TODAY = '2026-01-10T00:00:00.000Z';
 
@@ -17,6 +17,7 @@ function fakeQuestion(id: string, moduleId: string): CodeQuestion {
     solution: '',
     hints: ['a', 'b', 'c', 'd'],
     spec: { mode: 'function', entryPoint: 'fn', argTypes: [], resultType: 'value', tests: [] },
+    reviewable: true,
   };
 }
 
@@ -29,6 +30,7 @@ function passingAttempt(questionId: string): Attempt {
     hintsUsed: 0,
     durationMs: 0,
     createdAt: '2026-01-01T00:00:00.000Z',
+    context: 'practice',
   };
 }
 
@@ -37,7 +39,7 @@ function baseSnapshot(overrides: Partial<ProgressSnapshot> = {}): ProgressSnapsh
     modules: [],
     questions: [],
     attempts: [],
-    reviewRecords: [],
+    reviewStates: [],
     learnCompletions: new Set(),
     todayIso: TODAY,
     ...overrides,
@@ -45,19 +47,19 @@ function baseSnapshot(overrides: Partial<ProgressSnapshot> = {}): ProgressSnapsh
 }
 
 describe('selectNextAction', () => {
-  it('recommends review when at least one review record is due', () => {
-    const reviewRecords: ReviewRecord[] = [
-      { skillId: 's', ease: 2.5, intervalDays: 1, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0 },
+  it('recommends review when at least one review state is due', () => {
+    const reviewStates: ReviewState[] = [
+      { questionId: 'q1', rung: 0, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0, lastReviewedAt: '2025-12-31T00:00:00.000Z' },
     ];
-    const result = selectNextAction(baseSnapshot({ reviewRecords }));
+    const result = selectNextAction(baseSnapshot({ reviewStates }));
     expect(result).toEqual({ kind: 'review', dueCount: 1 });
   });
 
-  it('does not recommend review for a record not yet due', () => {
-    const reviewRecords: ReviewRecord[] = [
-      { skillId: 's', ease: 2.5, intervalDays: 1, dueAt: '2026-02-01T00:00:00.000Z', lapses: 0 },
+  it('does not recommend review for a state not yet due', () => {
+    const reviewStates: ReviewState[] = [
+      { questionId: 'q1', rung: 0, dueAt: '2026-02-01T00:00:00.000Z', lapses: 0, lastReviewedAt: '2026-01-01T00:00:00.000Z' },
     ];
-    const result = selectNextAction(baseSnapshot({ reviewRecords }));
+    const result = selectNextAction(baseSnapshot({ reviewStates }));
     expect(result.kind).not.toBe('review');
   });
 

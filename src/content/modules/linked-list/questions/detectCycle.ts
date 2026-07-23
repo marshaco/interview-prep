@@ -62,4 +62,5 @@ def detect_cycle(head):
       { id: 'single-node-self-cycle', group: 'edge', args: [{ values: [1], cyclePos: 0 }], expected: true, comparator: 'deep', label: 'single node pointing to itself' },
     ],
   },
+  reviewable: true,
 };

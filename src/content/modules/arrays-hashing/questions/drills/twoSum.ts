@@ -76,4 +76,5 @@ def two_sum(nums, target):
       },
     ],
   },
+  reviewable: true,
 };

@@ -1,7 +1,10 @@
-import type { ModuleId, QuestionId, Scorecard, SkillId } from '../content/types';
+import type { ModuleId, QuestionId, Scorecard } from '../content/types';
 
 /** One-tap post-fail self-tags (Triecode UI spec §10) — optional, added after the attempt already exists. */
 export type AttemptTag = 'edge_case' | 'off_by_one' | 'wrong_approach' | 'syntax';
+
+/** Whether an attempt was ordinary practice or a spaced-review session item (Review system spec §2). */
+export type AttemptContext = 'practice' | 'review';
 
 export interface Attempt {
   id: string;
@@ -12,6 +15,7 @@ export interface Attempt {
   durationMs: number;
   createdAt: string; // ISO
   tags?: AttemptTag[];
+  context: AttemptContext;
 }
 
 export interface AttemptQuery {
@@ -24,12 +28,19 @@ export interface Draft {
   updatedAt: string; // ISO
 }
 
-export interface ReviewRecord {
-  skillId: SkillId;
-  ease: number; // 1.3 - 2.8
-  intervalDays: number;
+/**
+ * Per-exercise spaced-review state (Review system spec §2) — replaces the
+ * earlier per-skill SM-2-lite `ReviewRecord`. `rung` indexes the fixed
+ * interval ladder (engine/srs/scheduler.ts's `RUNG_INTERVALS_DAYS`); a
+ * question enters this table (via `enterReview`) the first time it's
+ * passed outside of a review session, at rung 0, due the next day.
+ */
+export interface ReviewState {
+  questionId: QuestionId;
+  rung: number; // 0-5, index into RUNG_INTERVALS_DAYS
   dueAt: string; // ISO
   lapses: number;
+  lastReviewedAt: string; // ISO
 }
 
 export interface Note {
@@ -60,7 +71,7 @@ export interface ExportBundleV1 {
   tables: {
     attempts: Attempt[];
     drafts: Draft[];
-    reviewRecords: ReviewRecord[];
+    reviewStates: ReviewState[];
     notes: Note[];
     bookmarks: Bookmark[];
     learnCompletions: LearnCompletion[];

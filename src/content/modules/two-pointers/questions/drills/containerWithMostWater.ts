@@ -81,4 +81,5 @@ something better.`,
       },
     ],
   },
+  reviewable: true,
 };

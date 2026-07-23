@@ -65,4 +65,5 @@ def delete_value(head, value):
       { id: 'value-absent', group: 'edge', args: [[1, 2, 3], 9], expected: [1, 2, 3], comparator: 'deep', label: 'value not present' },
     ],
   },
+  reviewable: true,
 };

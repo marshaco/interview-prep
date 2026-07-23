@@ -69,4 +69,5 @@ twice, giving O(n).`,
       { id: 'single-element', group: 'edge', args: [[10]], expected: 1, comparator: 'deep', label: 'single element' },
     ],
   },
+  reviewable: true,
 };

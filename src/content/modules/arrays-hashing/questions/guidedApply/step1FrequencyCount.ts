@@ -68,4 +68,5 @@ first occurrence) so you can count in a single pass with no extra branch.`,
       },
     ],
   },
+  reviewable: false,
 };

@@ -6,7 +6,9 @@ client-only SPA — no server, no accounts. Full design in `ARCHITECTURE.md`
 (read it before any work), including its §10 "UI System" section — the current
 source of truth for shells, tokens, `ProgressRing`, the `selectNextAction` seam,
 and the mastery formula, all introduced by the Triecode UI overhaul (see the
-note after the Phases list below).
+first note after the Phases list below) — and its §13 "Review System" section,
+the current source of truth for the review pool, the fixed-interval scheduler,
+review sessions, and the Review page's three states (see the second note).
 
 The curriculum is an 18-module roadmap DAG split into two categories
 (ARCHITECTURE.md §4.1): **Data Structures** (`kind: 'data_structure'` — build
@@ -171,3 +173,22 @@ than following them literally:
 Treat the phase list above as the historical record of what was originally
 scoped; treat ARCHITECTURE.md as the live description of what the app
 actually does today.
+
+**Note — Review system redesign:** a later, separately-specified Review
+system (see ARCHITECTURE.md §13 for the resulting design) superseded parts
+of Phase 5 and Phase 7 rather than following them literally:
+
+- Phase 5's per-skill SM-2-lite scheduler (`ReviewRecord`, ease factor,
+  `buildTodaysReview` picking one random question per due skill) is gone,
+  replaced by a per-**exercise** fixed-interval ladder (`ReviewState`, rungs
+  0–5 over 1/3/7/14/30/60 days) — see ARCHITECTURE.md §13.2, not §7.3's
+  original text, for the live scheduler design.
+- Phase 7's standalone Interview Mode (its own route, a toolbar button, no
+  content ever actually used the `interview_mode` stage type) is deleted
+  entirely. Review sessions — cold solve, no hints, graded on submit,
+  across every already-solved reviewable exercise — absorb its role, on a
+  schedule rather than on demand.
+- Phase 5's "Today's Review queue + review route" and "trimmed dashboard"
+  DoD items are superseded by the Review page's three states (due /
+  caught up / summary) in ARCHITECTURE.md §13.4; the dashboard itself was
+  already folded into Home by the Triecode UI overhaul above.

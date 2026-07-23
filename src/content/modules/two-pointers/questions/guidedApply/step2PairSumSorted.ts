@@ -82,4 +82,5 @@ move \`right\` back.`,
       },
     ],
   },
+  reviewable: false,
 };

@@ -79,4 +79,5 @@ stack, that day has found its answer — pop it and record the gap.`,
       { id: 'single-day', group: 'edge', args: [[70]], expected: [0], comparator: 'deep', label: 'single day' },
     ],
   },
+  reviewable: true,
 };

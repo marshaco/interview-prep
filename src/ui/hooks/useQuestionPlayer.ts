@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildHarness } from '../../engine/grading/harness';
 import { grade } from '../../engine/grading/grade';
-import { deriveReviewQuality, review } from '../../engine/srs/scheduler';
+import { enterReview } from '../../engine/srs/scheduler';
 import { localDateIso } from '../../engine/srs/streaks';
 import { pythonRunner } from '../pythonRunner';
 import { storageAdapter } from '../storageAdapter';
 import type { RunResult } from '../../engine/runner/types';
 import type { Scorecard as ScorecardData } from '../../engine/grading/types';
 import type { CodeQuestion } from '../../content/types';
-import type { AttemptTag } from '../../storage/types';
+import type { AttemptContext, AttemptTag } from '../../storage/types';
 
 const RUN_TIMEOUT_MS = 8000;
 const DRAFT_AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -25,7 +25,7 @@ export interface PlayerResult {
  * touches. Extracted out of QuestionPlayerPage so the Guided Build stepper
  * can reuse the exact same behavior instead of re-implementing it.
  */
-export function useQuestionPlayer(question: CodeQuestion | undefined) {
+export function useQuestionPlayer(question: CodeQuestion | undefined, context: AttemptContext = 'practice') {
   const [activeQuestionId, setActiveQuestionId] = useState(question?.id);
   const [code, setCode] = useState('');
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
@@ -109,6 +109,7 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
       hintsUsed: hintsRevealed,
       durationMs,
       createdAt: now,
+      context,
     });
     setLastAttemptId(attemptId);
     setSelectedTags([]);
@@ -116,19 +117,19 @@ export function useQuestionPlayer(question: CodeQuestion | undefined) {
     // must land on the user's actual calendar day for streaks to be honest.
     await storageAdapter.logActiveDay(localDateIso(new Date()));
 
-    const reviewRecords = await storageAdapter.getReviewRecords();
-    const quality = deriveReviewQuality(scorecard.overall, hintsRevealed);
-
     // Mastery is a pure computation over Attempt history (engine/mastery) —
-    // nothing to write here. The review schedule is genuinely incremental
-    // state (ease/interval carry forward), so that still gets upserted.
-    await Promise.all(
-      question.skillIds.map((skillId) => {
-        const previousReview = reviewRecords.find((r) => r.skillId === skillId);
-        const updatedReview = review(previousReview, skillId, quality, now);
-        return storageAdapter.upsertReviewRecord(updatedReview);
-      }),
-    );
+    // nothing to write here. Entering the review pool only happens on a
+    // first-ever pass of a reviewable exercise during ordinary practice —
+    // review-session outcomes are scheduled explicitly by the review
+    // session player (it has session-level context, like submit count and
+    // whether the item was actually due, that this generic path lacks).
+    if (context === 'practice' && question.reviewable && scorecard.overall === 100) {
+      const existingStates = await storageAdapter.getReviewStates();
+      const alreadyTracked = existingStates.some((s) => s.questionId === question.id);
+      if (!alreadyTracked) {
+        await storageAdapter.upsertReviewState(enterReview(question.id, now));
+      }
+    }
   }
 
   async function execute(kind: 'run' | 'submit'): Promise<PlayerResult | null> {

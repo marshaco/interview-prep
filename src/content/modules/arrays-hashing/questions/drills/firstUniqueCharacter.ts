@@ -72,4 +72,5 @@ character.`,
       },
     ],
   },
+  reviewable: true,
 };

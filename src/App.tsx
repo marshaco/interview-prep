@@ -11,9 +11,6 @@ const ModulePage = lazy(() => import('./ui/routes/ModulePage').then((m) => ({ de
 const QuestionPlayerPage = lazy(() =>
   import('./ui/routes/QuestionPlayerPage').then((m) => ({ default: m.QuestionPlayerPage })),
 );
-const InterviewQuestionPage = lazy(() =>
-  import('./ui/routes/InterviewQuestionPage').then((m) => ({ default: m.InterviewQuestionPage })),
-);
 const LearnPage = lazy(() => import('./ui/routes/LearnPage').then((m) => ({ default: m.LearnPage })));
 const GuidedSequencePage = lazy(() =>
   import('./ui/routes/GuidedSequencePage').then((m) => ({ default: m.GuidedSequencePage })),
@@ -59,7 +56,6 @@ function App() {
           {/* Splat, not :questionId — question ids are namespaced like "linked-list/append"
               and contain a literal slash, which a single dynamic segment can't match. */}
           <Route path="/questions/*" element={<QuestionPlayerPage />} />
-          <Route path="/interview/*" element={<InterviewQuestionPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

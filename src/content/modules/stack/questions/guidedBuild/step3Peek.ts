@@ -122,4 +122,5 @@ export const step3Peek: CodeQuestion = {
       },
     ],
   },
+  reviewable: false,
 };

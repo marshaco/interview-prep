@@ -66,4 +66,5 @@ def merge_two_sorted(head1, head2):
       { id: 'both-single-equal', group: 'edge', args: [[5], [5]], expected: [5, 5], comparator: 'deep', label: 'both single node with equal values' },
     ],
   },
+  reviewable: true,
 };

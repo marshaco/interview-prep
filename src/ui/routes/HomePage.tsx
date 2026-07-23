@@ -12,7 +12,7 @@ import { ProgressRing } from '../components/common/ProgressRing';
 import { StreakCalendar } from '../components/common/StreakCalendar';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { ModuleId, RoadmapModule } from '../../content/types';
-import type { Attempt, ReviewRecord } from '../../storage/types';
+import type { Attempt, ReviewState } from '../../storage/types';
 
 const MIN_DAYS_FOR_HEATMAP = 7;
 const CARD_WIDTH = 200;
@@ -20,7 +20,7 @@ const CARD_WIDTH = 200;
 interface HomeData {
   attempts: Attempt[];
   dayLog: string[];
-  reviewRecords: ReviewRecord[];
+  reviewStates: ReviewState[];
   learnCompletions: Set<ModuleId>;
 }
 
@@ -111,11 +111,11 @@ export function HomePage() {
     void Promise.all([
       storageAdapter.getAttempts(),
       storageAdapter.getDayLog(),
-      storageAdapter.getReviewRecords(),
+      storageAdapter.getReviewStates(),
       storageAdapter.getLearnCompletions(),
-    ]).then(([attempts, dayLog, reviewRecords, learnCompletions]) => {
+    ]).then(([attempts, dayLog, reviewStates, learnCompletions]) => {
       if (cancelled) return;
-      setData({ attempts, dayLog, reviewRecords, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)) });
+      setData({ attempts, dayLog, reviewStates, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)) });
     });
     return () => {
       cancelled = true;
@@ -159,7 +159,7 @@ export function HomePage() {
     modules,
     questions,
     attempts: data.attempts,
-    reviewRecords: data.reviewRecords,
+    reviewStates: data.reviewStates,
     learnCompletions: data.learnCompletions,
     todayIso: today,
   });

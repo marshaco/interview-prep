@@ -1,24 +1,12 @@
-import type { SkillId } from '../../content/types';
-import type { ReviewRecord } from '../../storage/types';
+import type { QuestionId } from '../../content/types';
+import type { ReviewState } from '../../storage/types';
 
-const EASE_MIN = 1.3;
-const EASE_MAX = 2.8;
-const EASE_DEFAULT = 2.5;
-const LAPSE_EASE_PENALTY = 0.2;
-const LAPSE_INTERVAL_DAYS = 1;
-const QUALITY_LAPSE_THRESHOLD = 3;
-const HINT_QUALITY_PENALTY_THRESHOLD = 3;
+/** Fixed interval ladder (Review system spec §2) — rung index -> days until due. */
+export const RUNG_INTERVALS_DAYS = [1, 3, 7, 14, 30, 60] as const;
+export const MAX_RUNG = RUNG_INTERVALS_DAYS.length - 1;
 
-/** Grades an attempt into SM-2 quality (0-5) from its scorecard and hint usage. */
-export function deriveReviewQuality(overall: number, hintsUsed: number): number {
-  const base = Math.round(overall / 20); // 20-point bucketing of the scorecard, independent of module mastery
-  const penalty = hintsUsed >= HINT_QUALITY_PENALTY_THRESHOLD ? 1 : 0;
-  return Math.max(0, Math.min(5, base - penalty));
-}
-
-function clampEase(ease: number): number {
-  return Math.max(EASE_MIN, Math.min(EASE_MAX, ease));
-}
+/** Default "fast pass" threshold when a question doesn't override one — 10 minutes. */
+export const DEFAULT_FAST_THRESHOLD_MS = 10 * 60 * 1000;
 
 function addDaysToIso(iso: string, days: number): string {
   const date = new Date(iso);
@@ -26,35 +14,62 @@ function addDaysToIso(iso: string, days: number): string {
   return date.toISOString();
 }
 
-/**
- * SM-2-lite: (record, quality, now) -> record, per ARCHITECTURE §7.3.
- * Accepts `record: undefined` for a skill with no review history yet,
- * rather than requiring a separate initialization call at every call site.
- */
-export function review(record: ReviewRecord | undefined, skillId: SkillId, quality: number, now: string): ReviewRecord {
-  const ease = record?.ease ?? EASE_DEFAULT;
-  const intervalDays = record?.intervalDays ?? 1;
-  const lapses = record?.lapses ?? 0;
+function dueAtForRung(rung: number, now: string): string {
+  const clamped = Math.max(0, Math.min(MAX_RUNG, rung));
+  // Fallback mirrors the ladder's longest interval; unreachable given the
+  // clamp above, but noUncheckedIndexedAccess can't see that statically.
+  const days = RUNG_INTERVALS_DAYS[clamped] ?? 60;
+  return addDaysToIso(now, days);
+}
 
-  if (quality < QUALITY_LAPSE_THRESHOLD) {
+/**
+ * An exercise enters the review pool the first time it's passed outside of
+ * a review session (Review system spec §1) — rung 0, due tomorrow.
+ */
+export function enterReview(questionId: QuestionId, now: string): ReviewState {
+  return { questionId, rung: 0, dueAt: dueAtForRung(0, now), lapses: 0, lastReviewedAt: now };
+}
+
+export interface ReviewOutcome {
+  /** Did this review session item eventually pass before the queue moved on? */
+  passed: boolean;
+  /** Did the very first submit pass — no failed submits before it? Ignored when `passed` is false. */
+  cleanPass: boolean;
+  /** Was time-to-pass under the fast threshold? Only meaningful when `cleanPass` is true. */
+  fast: boolean;
+}
+
+/**
+ * Advances or lapses a reviewed exercise per the fixed interval ladder
+ * (Review system spec §2) — this is the Phase-5-successor seam, documented
+ * in ARCHITECTURE.md next to `selectNextAction` and the mastery formula:
+ * swapping this for an SM-2-style algorithm later needs no consumer to
+ * change, exactly like the per-skill scheduler this replaces was designed
+ * to be swappable.
+ *
+ * - Failed (or abandoned without passing): lapse to rung 0, due tomorrow, lapses += 1.
+ * - Clean pass, fast: advance 2 rungs (capped at MAX_RUNG).
+ * - Clean pass, not fast: advance 1 rung.
+ * - Scraped pass (multiple submits): stay on the current rung, rescheduled from `now`.
+ */
+export function scheduleReview(state: ReviewState, outcome: ReviewOutcome, now: string): ReviewState {
+  if (!outcome.passed) {
     return {
-      skillId,
-      ease: clampEase(ease - LAPSE_EASE_PENALTY),
-      intervalDays: LAPSE_INTERVAL_DAYS,
-      dueAt: addDaysToIso(now, LAPSE_INTERVAL_DAYS),
-      lapses: lapses + 1,
+      questionId: state.questionId,
+      rung: 0,
+      dueAt: dueAtForRung(0, now),
+      lapses: state.lapses + 1,
+      lastReviewedAt: now,
     };
   }
 
-  const easeDelta = quality === 5 ? 0.1 : quality === 4 ? 0.05 : -0.05; // quality === 3
-  const nextEase = clampEase(ease + easeDelta);
-  const nextIntervalDays = Math.max(1, Math.round(intervalDays * nextEase));
-
+  const advance = outcome.cleanPass ? (outcome.fast ? 2 : 1) : 0;
+  const rung = Math.min(MAX_RUNG, state.rung + advance);
   return {
-    skillId,
-    ease: nextEase,
-    intervalDays: nextIntervalDays,
-    dueAt: addDaysToIso(now, nextIntervalDays),
-    lapses,
+    questionId: state.questionId,
+    rung,
+    dueAt: dueAtForRung(rung, now),
+    lapses: state.lapses,
+    lastReviewedAt: now,
   };
 }

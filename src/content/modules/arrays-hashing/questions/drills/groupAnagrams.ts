@@ -94,4 +94,5 @@ return norm(got) == norm(expected)`,
       },
     ],
   },
+  reviewable: true,
 };

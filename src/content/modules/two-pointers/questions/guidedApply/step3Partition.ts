@@ -65,4 +65,5 @@ the read pointer finds one.`,
       { id: 'single-zero', group: 'edge', args: [[0]], expected: [0], comparator: 'deep', label: 'single zero' },
     ],
   },
+  reviewable: false,
 };

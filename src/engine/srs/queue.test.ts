@@ -1,148 +1,110 @@
 import { describe, expect, it } from 'vitest';
-import { buildTodaysReview, pickReviewQuestion } from './queue';
-import type { Attempt, ReviewRecord } from '../../storage/types';
+import { buildReviewQueue, countDueThisWeek, countDueTomorrow } from './queue';
+import type { ReviewState } from '../../storage/types';
 import type { CodeQuestion } from '../../content/types';
 
 const TODAY = '2026-01-10T00:00:00.000Z';
 
-function fakeQuestion(id: string, skillIds: string[]): CodeQuestion {
+function fakeQuestion(id: string, moduleId: string): CodeQuestion {
   return {
     id,
     kind: 'method_impl',
-    moduleId: 'linked-list',
-    skillIds,
+    moduleId,
+    skillIds: [],
     title: id,
     prompt: '',
     starterCode: '',
     solution: '',
     hints: ['a', 'b', 'c', 'd'],
     spec: { mode: 'function', entryPoint: 'fn', argTypes: [], resultType: 'value', tests: [] },
+    reviewable: true,
   };
 }
 
-function fakeAttempt(questionId: string, createdAt: string): Attempt {
-  return {
-    id: crypto.randomUUID(),
-    questionId,
-    code: '',
-    scorecard: { questionId, correctness: { correct: 1, total: 1 }, edgeCases: { correct: 1, total: 1 }, overall: 100, failures: [], style: null, readability: null, complexity: null },
-    hintsUsed: 0,
-    durationMs: 0,
-    createdAt,
-  };
+function fakeState(questionId: string, dueAt: string, rung: number, overrides: Partial<ReviewState> = {}): ReviewState {
+  return { questionId, dueAt, rung, lapses: 0, lastReviewedAt: dueAt, ...overrides };
 }
 
-describe('buildTodaysReview', () => {
-  it('excludes records not yet due', () => {
-    const records: ReviewRecord[] = [
-      { skillId: 'a', ease: 2.5, intervalDays: 1, dueAt: '2026-01-05T00:00:00.000Z', lapses: 0 },
-      { skillId: 'b', ease: 2.5, intervalDays: 1, dueAt: '2026-01-20T00:00:00.000Z', lapses: 0 },
+describe('buildReviewQueue', () => {
+  it('excludes states not yet due', () => {
+    const states = [fakeState('a', '2026-01-05T00:00:00.000Z', 0), fakeState('b', '2026-01-20T00:00:00.000Z', 0)];
+    const result = buildReviewQueue(states, [fakeQuestion('a', 'm1'), fakeQuestion('b', 'm1')], TODAY);
+    expect(result.map((r) => r.questionId)).toEqual(['a']);
+  });
+
+  it('sorts most-overdue first, ties broken by lower rung first', () => {
+    const states = [
+      fakeState('same-day-high-rung', '2026-01-09T00:00:00.000Z', 4),
+      fakeState('same-day-low-rung', '2026-01-09T00:00:00.000Z', 0),
+      fakeState('more-overdue', '2026-01-01T00:00:00.000Z', 2),
     ];
-    const result = buildTodaysReview(records, new Map(), TODAY, []);
-    expect(result.map((r) => r.skillId)).toEqual(['a']);
+    const questions = states.map((s) => fakeQuestion(s.questionId, 'm1'));
+    const result = buildReviewQueue(states, questions, TODAY);
+    expect(result.map((r) => r.questionId)).toEqual(['more-overdue', 'same-day-low-rung', 'same-day-high-rung']);
   });
 
-  it('sorts by mastery ascending, then overdue-days descending', () => {
-    const records: ReviewRecord[] = [
-      { skillId: 'high-mastery', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
-      { skillId: 'low-mastery', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
-      { skillId: 'low-mastery-more-overdue', ease: 2.5, intervalDays: 1, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0 },
-    ];
-    const mastery = new Map<string, number>([
-      ['high-mastery', 0.9],
-      ['low-mastery', 0.2],
-      ['low-mastery-more-overdue', 0.2],
-    ]);
-    const result = buildTodaysReview(records, mastery, TODAY, []);
-    expect(result.map((r) => r.skillId)).toEqual(['low-mastery-more-overdue', 'low-mastery', 'high-mastery']);
-  });
-
-  it('treats a skill with no mastery record as score 0 (most urgent)', () => {
-    const records: ReviewRecord[] = [
-      { skillId: 'never-attempted', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
-      { skillId: 'attempted', ease: 2.5, intervalDays: 1, dueAt: '2026-01-09T00:00:00.000Z', lapses: 0 },
-    ];
-    const mastery = new Map<string, number>([['attempted', 0.01]]);
-    const result = buildTodaysReview(records, mastery, TODAY, []);
-    expect(result[0]?.skillId).toBe('never-attempted');
-  });
-
-  it('caps the queue size', () => {
-    const records: ReviewRecord[] = Array.from({ length: 20 }, (_, i) => ({
-      skillId: `s${i}`,
-      ease: 2.5,
-      intervalDays: 1,
-      dueAt: '2026-01-01T00:00:00.000Z',
-      lapses: 0,
-    }));
-    expect(buildTodaysReview(records, new Map(), TODAY, [], 5)).toHaveLength(5);
-  });
-
-  it('is never empty for a brand new user — unattempted skills fill the queue', () => {
-    const result = buildTodaysReview([], new Map(), TODAY, ['a', 'b', 'c']);
-    expect(result.map((r) => r.skillId)).toEqual(['a', 'b', 'c']);
-  });
-
-  it('puts real overdue reviews ahead of unattempted skills', () => {
-    const records: ReviewRecord[] = [{ skillId: 'overdue', ease: 2.5, intervalDays: 1, dueAt: '2026-01-01T00:00:00.000Z', lapses: 0 }];
-    const mastery = new Map<string, number>([['overdue', 0.8]]);
-    const result = buildTodaysReview(records, mastery, TODAY, ['overdue', 'fresh']);
-    expect(result.map((r) => r.skillId)).toEqual(['overdue', 'fresh']);
-  });
-
-  it('only uses unattempted skills to pad remaining slots, never past the cap', () => {
-    const records: ReviewRecord[] = Array.from({ length: 3 }, (_, i) => ({
-      skillId: `overdue${i}`,
-      ease: 2.5,
-      intervalDays: 1,
-      dueAt: '2026-01-01T00:00:00.000Z',
-      lapses: 0,
-    }));
-    const result = buildTodaysReview(records, new Map(), TODAY, ['fresh1', 'fresh2', 'fresh3', 'fresh4'], 5);
+  it('caps the queue size, keeping the most overdue within the cap', () => {
+    const states = Array.from({ length: 20 }, (_, i) =>
+      fakeState(`q${i}`, `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z`, 0),
+    );
+    const questions = states.map((s) => fakeQuestion(s.questionId, 'm1'));
+    const result = buildReviewQueue(states, questions, TODAY, 5);
     expect(result).toHaveLength(5);
-    expect(result.filter((r) => r.skillId.startsWith('fresh'))).toHaveLength(2);
+    // The 5 earliest dueAt dates are the most overdue.
+    expect(result.map((r) => r.questionId)).toEqual(['q0', 'q1', 'q2', 'q3', 'q4']);
   });
 
-  it('does not re-add a skill that already has a review record, even if not due', () => {
-    const records: ReviewRecord[] = [{ skillId: 'not-due-yet', ease: 2.5, intervalDays: 1, dueAt: '2026-01-20T00:00:00.000Z', lapses: 0 }];
-    const result = buildTodaysReview(records, new Map(), TODAY, ['not-due-yet', 'fresh']);
-    expect(result.map((r) => r.skillId)).toEqual(['fresh']);
+  it('is empty when nothing is due', () => {
+    expect(buildReviewQueue([], [], TODAY)).toEqual([]);
+  });
+
+  it('separates adjacent same-module items via a one-swap interleave pass', () => {
+    // Urgency order alone would be m1-a, m1-b, m2-a — the two m1 items are
+    // adjacent, and a later m2 item is available to swap into the middle.
+    const states = [
+      fakeState('m1-a', '2026-01-01T00:00:00.000Z', 0),
+      fakeState('m1-b', '2026-01-03T00:00:00.000Z', 0),
+      fakeState('m2-a', '2026-01-08T00:00:00.000Z', 0),
+    ];
+    const questions = [fakeQuestion('m1-a', 'm1'), fakeQuestion('m1-b', 'm1'), fakeQuestion('m2-a', 'm2')];
+    const result = buildReviewQueue(states, questions, TODAY);
+    expect(result.map((r) => r.questionId)).toEqual(['m1-a', 'm2-a', 'm1-b']);
+  });
+
+  it('leaves a trailing same-module pair alone when no later item can swap in (single-pass limitation)', () => {
+    const states = [
+      fakeState('m2-a', '2026-01-03T00:00:00.000Z', 0),
+      fakeState('m1-b', '2026-01-04T00:00:00.000Z', 0),
+      fakeState('m1-a', '2026-01-05T00:00:00.000Z', 0),
+    ];
+    const questions = [fakeQuestion('m2-a', 'm2'), fakeQuestion('m1-b', 'm1'), fakeQuestion('m1-a', 'm1')];
+    const result = buildReviewQueue(states, questions, TODAY);
+    expect(result.map((r) => r.questionId)).toEqual(['m2-a', 'm1-b', 'm1-a']);
   });
 });
 
-describe('pickReviewQuestion', () => {
-  it('returns null when no question exercises the skill', () => {
-    expect(pickReviewQuestion('ghost/skill', [fakeQuestion('q1', ['other'])], [])).toBeNull();
+describe('countDueTomorrow', () => {
+  it('counts states due on the calendar day right after today', () => {
+    const states = [fakeState('a', '2026-01-11T08:00:00.000Z', 0), fakeState('b', '2026-01-12T00:00:00.000Z', 0)];
+    expect(countDueTomorrow(states, TODAY)).toBe(1);
+  });
+});
+
+describe('countDueThisWeek', () => {
+  it('counts states due within the next 7 days, excluding already-due ones', () => {
+    const states = [
+      fakeState('already-due', '2026-01-09T00:00:00.000Z', 0),
+      fakeState('in-3-days', '2026-01-13T00:00:00.000Z', 0),
+      fakeState('in-8-days', '2026-01-18T00:00:00.000Z', 0),
+    ];
+    expect(countDueThisWeek(states, TODAY)).toBe(1);
   });
 
-  it('returns the only candidate when there is exactly one', () => {
-    const q = fakeQuestion('q1', ['s']);
-    expect(pickReviewQuestion('s', [q], [])).toBe(q);
-  });
-
-  it('excludes the most-recently-attempted candidate when there is a choice', () => {
-    const q1 = fakeQuestion('q1', ['s']);
-    const q2 = fakeQuestion('q2', ['s']);
-    const attempts = [fakeAttempt('q1', '2026-01-01T00:00:00.000Z'), fakeAttempt('q2', '2026-01-05T00:00:00.000Z')];
-    // q2 was attempted most recently, so it should be excluded — q1 is the only valid pick.
-    const result = pickReviewQuestion('s', [q1, q2], attempts, () => 0.99);
-    expect(result?.id).toBe('q1');
-  });
-
-  it('falls back to the full pool if excluding the most recent would empty it', () => {
-    const q1 = fakeQuestion('q1', ['s']);
-    const attempts = [fakeAttempt('q1', '2026-01-01T00:00:00.000Z')];
-    const result = pickReviewQuestion('s', [q1], attempts);
-    expect(result?.id).toBe('q1');
-  });
-
-  it('picks randomly among untouched candidates using the injected RNG', () => {
-    const q1 = fakeQuestion('q1', ['s']);
-    const q2 = fakeQuestion('q2', ['s']);
-    const q3 = fakeQuestion('q3', ['s']);
-    const first = pickReviewQuestion('s', [q1, q2, q3], [], () => 0);
-    const last = pickReviewQuestion('s', [q1, q2, q3], [], () => 0.99);
-    expect(first?.id).toBe('q1');
-    expect(last?.id).toBe('q3');
+  it('counts an item due exactly 7 calendar days out even at a later time-of-day than midnight', () => {
+    // TODAY is midnight; a review scheduled mid-afternoon exactly 7 days
+    // later has a *timestamp* past today's midnight + 7*86400000ms, which a
+    // naive millisecond comparison would wrongly exclude.
+    const states = [fakeState('exactly-7-days', '2026-01-17T15:41:13.263Z', 0)];
+    expect(countDueThisWeek(states, TODAY)).toBe(1);
   });
 });

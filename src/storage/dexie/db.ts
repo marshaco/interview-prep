@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Attempt, Bookmark, Draft, LearnCompletion, Note, ReviewRecord } from '../types';
+import type { Attempt, Bookmark, Draft, LearnCompletion, Note, ReviewState } from '../types';
 
 // dayLog rows are wrapped in an object (rather than storing the bare ISO
 // date string) so every table uniformly stores objects with a keyPath —
@@ -11,7 +11,7 @@ export interface DayLogRow {
 export class AppDatabase extends Dexie {
   attempts!: Table<Attempt, string>;
   drafts!: Table<Draft, string>;
-  reviewRecords!: Table<ReviewRecord, string>;
+  reviewStates!: Table<ReviewState, string>;
   notes!: Table<Note, string>;
   bookmarks!: Table<Bookmark, string>;
   learnCompletions!: Table<LearnCompletion, string>;
@@ -38,6 +38,13 @@ export class AppDatabase extends Dexie {
     // module stepper's frontier logic.
     this.version(3).stores({
       learnCompletions: 'moduleId',
+    });
+    // v4: the per-skill SM-2-lite scheduler is replaced by a per-exercise
+    // fixed-interval ladder (Review system spec §2) — reviewRecords (keyed
+    // by skillId) is dropped, reviewStates (keyed by questionId) takes over.
+    this.version(4).stores({
+      reviewRecords: null,
+      reviewStates: 'questionId',
     });
   }
 }

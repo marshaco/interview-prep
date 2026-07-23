@@ -63,4 +63,5 @@ the difference between an O(n²) and an O(n) solution here.`,
       { id: 'single-element', group: 'edge', args: [[42]], expected: false, comparator: 'deep', label: 'single element' },
     ],
   },
+  reviewable: false,
 };

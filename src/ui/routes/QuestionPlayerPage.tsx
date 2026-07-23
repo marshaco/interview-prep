@@ -25,12 +25,6 @@ export function QuestionPlayerPage() {
   }
 
   return (
-    <QuestionPlayerLayout
-      question={question}
-      player={player}
-      backHref={`/modules/${question.moduleId}`}
-      backLabel="Back to module"
-      interviewHref={`/interview/${question.id}`}
-    />
+    <QuestionPlayerLayout question={question} player={player} backHref={`/modules/${question.moduleId}`} backLabel="Back to module" />
   );
 }

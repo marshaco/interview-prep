@@ -1,10 +1,13 @@
-import type { CodeQuestion, SkillId } from '../../content/types';
-import type { Attempt, ReviewRecord } from '../../storage/types';
+import type { CodeQuestion, QuestionId } from '../../content/types';
+import type { ReviewState } from '../../storage/types';
 
-export interface DueReviewItem {
-  skillId: SkillId;
+export const DEFAULT_SESSION_CAP = 10;
+export const QUICK_SESSION_CAP = 5;
+
+export interface ReviewQueueItem {
+  questionId: QuestionId;
   overdueDays: number;
-  masteryScore: number;
+  rung: number;
 }
 
 function daysBetween(fromIso: string, toIso: string): number {
@@ -12,73 +15,84 @@ function daysBetween(fromIso: string, toIso: string): number {
 }
 
 /**
- * Today's Review queue per ARCHITECTURE §7.3: due records sorted by
- * (mastery asc, overdue-days desc), capped at a daily size. There's no
- * Settings UI yet to make the cap user-configurable, so it's a parameter
- * with a sane default rather than a stored preference.
- *
- * A skill with no ReviewRecord yet hasn't been attempted at all — it isn't
- * "due" in the SRS sense, but a queue that's empty until the user has
- * already reviewed something is backwards for a practice tool. Real overdue
- * reviews always come first (they carry genuine SRS urgency); unattempted
- * skills only pad the remaining slots up to `cap`, in `allSkillIds` order,
- * so the queue is never empty as long as there's content to practice.
+ * One adjacent-swap pass: if consecutive items share a module, swap the
+ * second with the nearest later item from a different module (Review
+ * system spec §3 — "do not over-engineer beyond one adjacent-swap pass").
+ * Takes `questions` (not the content registry) so this stays a pure
+ * function over its inputs, same pattern computeModuleMastery uses.
  */
-export function buildTodaysReview(
-  reviewRecords: ReviewRecord[],
-  skillScores: ReadonlyMap<SkillId, number>,
-  todayIso: string,
-  allSkillIds: SkillId[] = [],
-  cap = 10,
-): DueReviewItem[] {
-  const due = reviewRecords.filter((record) => record.dueAt <= todayIso);
+function interleaveByModule(items: ReviewQueueItem[], questions: CodeQuestion[]): ReviewQueueItem[] {
+  const moduleOf = new Map(questions.map((q) => [q.id, q.moduleId]));
+  const result = [...items];
+  for (let i = 1; i < result.length; i++) {
+    const current = result[i];
+    const previous = result[i - 1];
+    if (!current || !previous) continue;
+    if (moduleOf.get(current.questionId) !== moduleOf.get(previous.questionId)) continue;
 
-  const overdueItems: DueReviewItem[] = due.map((record) => ({
-    skillId: record.skillId,
-    overdueDays: Math.max(0, daysBetween(record.dueAt, todayIso)),
-    masteryScore: skillScores.get(record.skillId) ?? 0,
-  }));
-
-  overdueItems.sort((a, b) => a.masteryScore - b.masteryScore || b.overdueDays - a.overdueDays);
-
-  if (overdueItems.length >= cap) return overdueItems.slice(0, cap);
-
-  const reviewedSkillIds = new Set(reviewRecords.map((record) => record.skillId));
-  const freshItems: DueReviewItem[] = allSkillIds
-    .filter((skillId) => !reviewedSkillIds.has(skillId))
-    .map((skillId) => ({ skillId, overdueDays: 0, masteryScore: 0 }));
-
-  return [...overdueItems, ...freshItems].slice(0, cap);
+    for (let j = i + 1; j < result.length; j++) {
+      const candidate = result[j];
+      if (candidate && moduleOf.get(candidate.questionId) !== moduleOf.get(previous.questionId)) {
+        result[i] = candidate;
+        result[j] = current;
+        break;
+      }
+    }
+  }
+  return result;
 }
 
 /**
- * Picks a question for a due skill, preferring one the user hasn't seen
- * most recently — cheap anti-memorization per ARCHITECTURE §7.3. When only
- * one question exercises the skill, or none have ever been attempted,
- * there's nothing to exclude and any candidate is fine.
+ * Builds a review session queue (Review system spec §3): every due
+ * exercise, ordered most-overdue-first (ties broken by lower rung —
+ * fragile memories before stable ones), interleaved across modules, capped
+ * at `cap`. Pass `QUICK_SESSION_CAP` for the "Quick 5" variant — it's just
+ * the first 5 of the same ordering, not a separately-selected set.
  */
-export function pickReviewQuestion(
-  skillId: SkillId,
+export function buildReviewQueue(
+  reviewStates: ReviewState[],
   questions: CodeQuestion[],
-  attempts: Attempt[],
-  random: () => number = Math.random,
-): CodeQuestion | null {
-  const candidates = questions.filter((q) => q.skillIds.includes(skillId));
-  if (candidates.length <= 1) return candidates[0] ?? null;
+  todayIso: string,
+  cap = DEFAULT_SESSION_CAP,
+): ReviewQueueItem[] {
+  const due = reviewStates.filter((state) => state.dueAt <= todayIso);
 
-  const candidateIds = new Set(candidates.map((q) => q.id));
-  const relevantAttempts = attempts.filter((a) => candidateIds.has(a.questionId));
+  const items: ReviewQueueItem[] = due.map((state) => ({
+    questionId: state.questionId,
+    overdueDays: Math.max(0, daysBetween(state.dueAt, todayIso)),
+    rung: state.rung,
+  }));
 
-  let pool = candidates;
-  if (relevantAttempts.length > 0) {
-    const mostRecent = relevantAttempts.reduce((latest, a) => (a.createdAt > latest.createdAt ? a : latest));
-    const withoutMostRecent = candidates.filter((q) => q.id !== mostRecent.questionId);
-    // If every candidate but one has never been attempted, excluding the
-    // most-recently-attempted one still leaves choices; only fall back to
-    // the full pool if that exclusion would empty it out.
-    pool = withoutMostRecent.length > 0 ? withoutMostRecent : candidates;
-  }
+  items.sort((a, b) => b.overdueDays - a.overdueDays || a.rung - b.rung);
 
-  const index = Math.floor(random() * pool.length);
-  return pool[index] ?? null;
+  return interleaveByModule(items.slice(0, cap), questions);
+}
+
+function addDaysToIso(iso: string, days: number): string {
+  const date = new Date(iso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
+}
+
+/** Count of reviewStates due on the calendar day right after `todayIso` — the caught-up state's forecast line. */
+export function countDueTomorrow(reviewStates: ReviewState[], todayIso: string): number {
+  const tomorrow = addDaysToIso(todayIso, 1).slice(0, 10);
+  return reviewStates.filter((s) => s.dueAt.slice(0, 10) === tomorrow).length;
+}
+
+/**
+ * Count of reviewStates due within the next 7 calendar days (excluding
+ * anything already due today or earlier). Compares calendar dates, not raw
+ * timestamps — `todayIso` is a midnight-normalized calendar date (per
+ * `localDateIso`) while `dueAt` carries the real time-of-day a review was
+ * scheduled at, so a millisecond-level comparison would wrongly exclude an
+ * item due exactly 7 days out at any time later than midnight.
+ */
+export function countDueThisWeek(reviewStates: ReviewState[], todayIso: string): number {
+  const today = todayIso.slice(0, 10);
+  const cutoff = addDaysToIso(todayIso, 7).slice(0, 10);
+  return reviewStates.filter((s) => {
+    const dueDate = s.dueAt.slice(0, 10);
+    return dueDate > today && dueDate <= cutoff;
+  }).length;
 }

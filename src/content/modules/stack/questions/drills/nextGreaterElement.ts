@@ -98,4 +98,5 @@ up at the end.`,
       },
     ],
   },
+  reviewable: true,
 };

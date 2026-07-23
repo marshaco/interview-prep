@@ -2,13 +2,15 @@ import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { getQuestion } from '../../../content/registry';
 import { exerciseHref, isSolved, isStageComplete } from '../../../engine/nextAction/selectNextAction';
-import type { Attempt } from '../../../storage/types';
-import type { RoadmapModule, Stage, StageItem } from '../../../content/types';
+import type { Attempt, ReviewState } from '../../../storage/types';
+import type { QuestionId, RoadmapModule, Stage, StageItem } from '../../../content/types';
 
 interface ModuleStepperProps {
   module: RoadmapModule;
   attempts: Attempt[];
   isLearnComplete: boolean;
+  reviewStates: ReviewState[];
+  todayIso: string;
 }
 
 type GlyphState = 'completed' | 'current' | 'upcoming';
@@ -35,12 +37,14 @@ function ExpandableStage({
   module,
   stage,
   attempts,
+  dueQuestionIds,
   summary,
   learnLinkLabel,
 }: {
   module: RoadmapModule;
   stage: Stage;
   attempts: Attempt[];
+  dueQuestionIds: ReadonlySet<QuestionId>;
   summary: string;
   learnLinkLabel: string;
 }) {
@@ -58,7 +62,15 @@ function ExpandableStage({
       ) : (
         <div className="mt-3 flex flex-col gap-2">
           {questionItems.map((item, itemIndex) => (
-            <ExerciseRow key={item.questionId} moduleId={module.id} stage={stage} item={item} index={itemIndex} attempts={attempts} />
+            <ExerciseRow
+              key={item.questionId}
+              moduleId={module.id}
+              stage={stage}
+              item={item}
+              index={itemIndex}
+              attempts={attempts}
+              isDue={dueQuestionIds.has(item.questionId)}
+            />
           ))}
         </div>
       )}
@@ -66,28 +78,35 @@ function ExpandableStage({
   );
 }
 
-/** One question row — used in both the current stage's list and an upcoming/completed stage's expanded list. */
+/** One question row — used in both the current stage's list and an upcoming/completed stage's expanded list. A due-for-review row links straight into a single-item review session instead of the normal exercise route (Review system spec §5). */
 function ExerciseRow({
   moduleId,
   stage,
   item,
   index,
   attempts,
+  isDue,
 }: {
   moduleId: string;
   stage: Stage;
   item: Extract<StageItem, { type: 'question' }>;
   index: number;
   attempts: Attempt[];
+  isDue: boolean;
 }) {
   const question = getQuestion(item.questionId);
   const solved = isSolved(attempts, item.questionId);
+  const href = isDue ? `/review?start=${encodeURIComponent(item.questionId)}` : exerciseHref(moduleId, stage.type, item.questionId, index);
   return (
     <Link
-      to={exerciseHref(moduleId, stage.type, item.questionId, index)}
+      to={href}
       className="flex items-center justify-between rounded border border-border bg-bg-raised px-4 py-2.5 text-sm text-text transition-colors duration-200 ease-out-motion hover:border-accent hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
-      <span>{question?.title ?? item.questionId}</span>
+      <span className="flex items-center gap-2">
+        {isDue && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />}
+        <span>{question?.title ?? item.questionId}</span>
+        {isDue && <span className="text-xs text-text-muted">due for review</span>}
+      </span>
       {solved && <span className="text-success">✓</span>}
     </Link>
   );
@@ -118,7 +137,8 @@ function firstUnsolvedItem(stage: Stage, attempts: Attempt[]): { item: Extract<S
   return index === -1 || !item ? null : { item, index };
 }
 
-export function ModuleStepper({ module, attempts, isLearnComplete }: ModuleStepperProps) {
+export function ModuleStepper({ module, attempts, isLearnComplete, reviewStates, todayIso }: ModuleStepperProps) {
+  const dueQuestionIds = new Set(reviewStates.filter((s) => s.dueAt <= todayIso).map((s) => s.questionId));
   let currentIndex = -1;
   for (const [index, stage] of module.stages.entries()) {
     if (stage.items.length === 0) continue;
@@ -151,6 +171,7 @@ export function ModuleStepper({ module, attempts, isLearnComplete }: ModuleStepp
               module={module}
               stage={stage}
               attempts={attempts}
+              dueQuestionIds={dueQuestionIds}
               summary={`${stage.title} — ${stageSummary(stage, attempts)}`}
               learnLinkLabel="Read again →"
             />
@@ -181,6 +202,7 @@ export function ModuleStepper({ module, attempts, isLearnComplete }: ModuleStepp
                       item={item}
                       index={itemIndex}
                       attempts={attempts}
+                      isDue={dueQuestionIds.has(item.questionId)}
                     />
                   ))}
                 </div>
@@ -194,6 +216,7 @@ export function ModuleStepper({ module, attempts, isLearnComplete }: ModuleStepp
               module={module}
               stage={stage}
               attempts={attempts}
+              dueQuestionIds={dueQuestionIds}
               summary={`${stage.title} · ${stageItemCountLabel(stage)}`}
               learnLinkLabel="Start →"
             />

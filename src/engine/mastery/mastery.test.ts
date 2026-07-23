@@ -11,6 +11,7 @@ function fakeAttempt(overrides: Partial<Attempt> & { questionId: string }): Atte
     hintsUsed: 0,
     durationMs: 0,
     createdAt: '2026-01-01T00:00:00.000Z',
+    context: 'practice',
     ...overrides,
   };
 }
@@ -35,6 +36,7 @@ function fakeQuestion(id: string, skillIds: string[]): CodeQuestion {
     solution: '',
     hints: ['a', 'b', 'c', 'd'],
     spec: { mode: 'function', entryPoint: 'fn', argTypes: [], resultType: 'value', tests: [] },
+    reviewable: true,
   };
 }
 
@@ -88,6 +90,30 @@ describe('computeExerciseScore', () => {
     const attempts = [passing('q1', '2026-01-03T00:00:00.000Z'), failing('q1', '2026-01-01T00:00:00.000Z')];
     const reversed = [...attempts].reverse();
     expect(computeExerciseScore(attempts)).toBe(computeExerciseScore(reversed));
+  });
+
+  it('decays by 0.8 per failed review-session attempt after the exercise already passed', () => {
+    const attempts = [
+      passing('q1', '2026-01-01T00:00:00.000Z'),
+      { ...failing('q1', '2026-01-05T00:00:00.000Z'), context: 'review' as const },
+    ];
+    expect(computeExerciseScore(attempts)).toBeCloseTo(0.8, 10);
+  });
+
+  it('does not apply the review-lapse penalty for failed practice attempts after a pass', () => {
+    const attempts = [passing('q1', '2026-01-01T00:00:00.000Z'), failing('q1', '2026-01-05T00:00:00.000Z')];
+    expect(computeExerciseScore(attempts)).toBe(1);
+  });
+
+  it('floors the score at 0.4 even after repeated review lapses', () => {
+    const attempts = [
+      passing('q1', '2026-01-01T00:00:00.000Z'),
+      ...Array.from({ length: 8 }, (_, i) => ({
+        ...failing('q1', `2026-0${(i % 9) + 1}-05T00:00:00.000Z`),
+        context: 'review' as const,
+      })),
+    ];
+    expect(computeExerciseScore(attempts)).toBe(0.4);
   });
 });
 

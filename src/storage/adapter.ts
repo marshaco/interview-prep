@@ -8,7 +8,7 @@ import type {
   ExportBundleV1,
   LearnCompletion,
   Note,
-  ReviewRecord,
+  ReviewState,
 } from './types';
 
 export interface StorageAdapter {
@@ -18,8 +18,8 @@ export interface StorageAdapter {
   updateAttemptTags(attemptId: string, tags: AttemptTag[]): Promise<void>;
   getDraft(questionId: QuestionId): Promise<Draft | null>;
   saveDraft(d: Draft): Promise<void>;
-  getReviewRecords(): Promise<ReviewRecord[]>;
-  upsertReviewRecord(r: ReviewRecord): Promise<void>;
+  getReviewStates(): Promise<ReviewState[]>;
+  upsertReviewState(r: ReviewState): Promise<void>;
   getLearnCompletions(): Promise<LearnCompletion[]>;
   /** Idempotent — marking an already-complete module complete again is a no-op update, not an error. */
   markLearnComplete(moduleId: ModuleId): Promise<void>;

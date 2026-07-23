@@ -3,16 +3,21 @@ import type { Attempt } from '../../storage/types';
 
 const HINT_DECAY = 0.85; // per hint revealed on the passing attempt
 const FAIL_DECAY = 0.9; // per failed submit before the eventual pass
-const MIN_PASS_SCORE = 0.4; // floor for any eventual pass, however many hints/fails it took
+const REVIEW_LAPSE_DECAY = 0.8; // per failed review attempt after the exercise had already passed once
+const MIN_PASS_SCORE = 0.4; // floor for any eventual pass, however many hints/fails/lapses it took
 
 /**
  * One exercise's mastery contribution, 0-1 — Triecode UI spec §11 (replaces
  * ARCHITECTURE §7.2's per-skill EWMA). 1.0 for a clean solve (no hints,
  * passes on the first submit); each hint revealed on the passing attempt
  * multiplies by 0.85, each failed submit before that pass multiplies by
- * 0.9, floored at 0.4 once passed at all. 0 if never passed. Takes the
- * question's full attempt history (any order) so a future time-decay
- * pass (Phase 5) can slot in without changing callers.
+ * 0.9. On top of that, each failed review-session attempt (Review system
+ * spec §5 — a lapse, read straight from `attempts` rather than a separate
+ * counter, since "review outcomes feed the same attempt history the
+ * formula reads") multiplies by 0.8 again — rings decay by evidence even
+ * before a real time-decay pass exists. Floored at 0.4 once passed at all;
+ * 0 if never passed. Takes the question's full attempt history (any
+ * order) so a future time-decay pass can slot in without changing callers.
  */
 export function computeExerciseScore(attempts: Attempt[]): number {
   const sorted = [...attempts].sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
@@ -20,7 +25,8 @@ export function computeExerciseScore(attempts: Attempt[]): number {
   for (const attempt of sorted) {
     if (attempt.scorecard.overall === 100) {
       const raw = HINT_DECAY ** attempt.hintsUsed * FAIL_DECAY ** failuresBeforePass;
-      return Math.max(MIN_PASS_SCORE, raw);
+      const reviewLapses = attempts.filter((a) => a.context === 'review' && a.scorecard.overall < 100).length;
+      return Math.max(MIN_PASS_SCORE, raw * REVIEW_LAPSE_DECAY ** reviewLapses);
     }
     failuresBeforePass += 1;
   }

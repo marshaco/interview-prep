@@ -92,6 +92,23 @@ export interface CodeQuestion {
   hints: [string, string, string, string]; // nudge -> concept -> pseudocode -> near-solution
   spec: HarnessSpec;
   visualization?: VisualizationBinding; // optional (§9), class-mode only
+  /**
+   * Whether a passed attempt enters the spaced-review pool (Review system
+   * spec §1). Convention, not a computed default: guided-build/guided-apply
+   * steps are authored `false` (re-solving one method inside a pre-written
+   * scaffold is low-value repetition); independent-build, method-drill, and
+   * algorithm-drill questions are authored `true`. Required (not inferred
+   * from stage type) so content/validate.ts can assert every question made
+   * a deliberate choice, with no `if (stage === ...)` branching anywhere
+   * that reads it.
+   */
+  reviewable: boolean;
+  /**
+   * Review-session "fast pass" threshold in ms — a clean pass under this
+   * advances two rungs instead of one (Review system spec §2). Optional;
+   * falls back to DEFAULT_FAST_THRESHOLD_MS (engine/srs/scheduler.ts).
+   */
+  reviewFastThresholdMs?: number;
 }
 
 // Grading result shapes. Defined here (not in engine/grading/types.ts, which
@@ -140,8 +157,7 @@ export type StageType =
   | 'independent_build' // data_structure only
   | 'method_drills' // data_structure only
   | 'guided_apply' // algorithm only
-  | 'algorithm_drills' // algorithm only
-  | 'interview_mode'; // both kinds
+  | 'algorithm_drills'; // algorithm only
 
 /** One box in a static illustrative diagram — a lesson aid, not user data. */
 export interface SequenceDiagramNode {

@@ -15,6 +15,10 @@ export function validateQuestion(question: CodeQuestion): string[] {
     errors.push(`${prefix}: hints must have exactly 4 entries, got ${hints.length}`);
   }
 
+  if (typeof question.reviewable !== 'boolean') {
+    errors.push(`${prefix}: reviewable must be a boolean`);
+  }
+
   const spec = question.spec;
   if (!spec.entryPoint) {
     errors.push(`${prefix}: spec.entryPoint must be non-empty`);
@@ -90,8 +94,8 @@ export function validateRegistry(questions: CodeQuestion[]): string[] {
 // `algorithm` module with `guided_build`) fail validation — never
 // special-cased in the engine or UI.
 const ALLOWED_STAGE_TYPES: Record<ModuleKind, StageType[]> = {
-  data_structure: ['learn', 'guided_build', 'independent_build', 'method_drills', 'interview_mode'],
-  algorithm: ['learn', 'guided_apply', 'algorithm_drills', 'interview_mode'],
+  data_structure: ['learn', 'guided_build', 'independent_build', 'method_drills'],
+  algorithm: ['learn', 'guided_apply', 'algorithm_drills'],
 };
 
 /**
