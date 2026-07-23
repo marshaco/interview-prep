@@ -9,6 +9,7 @@ import type {
   ExportBundleV1,
   LearnCompletion,
   Note,
+  PlanRecord,
   ReviewState,
 } from '../types';
 import { applyImportBundle, buildExportBundle, validateExportBundle } from '../exchange';
@@ -91,6 +92,27 @@ export class DexieAdapter implements StorageAdapter {
     return rows.map((row) => row.date);
   }
 
+  async getPlan(): Promise<PlanRecord | null> {
+    const row = await this.db.plan.get('singleton');
+    if (!row) return null;
+    return {
+      scope: row.scope,
+      minutesPerDay: row.minutesPerDay,
+      activeDays: row.activeDays,
+      targetDate: row.targetDate,
+      createdAt: row.createdAt,
+      pausedAt: row.pausedAt,
+    };
+  }
+
+  async savePlan(p: PlanRecord): Promise<void> {
+    await this.db.plan.put({ id: 'singleton', ...p });
+  }
+
+  async deletePlan(): Promise<void> {
+    await this.db.plan.delete('singleton');
+  }
+
   async exportAll(): Promise<ExportBundleV1> {
     return buildExportBundle(this.db);
   }
@@ -109,6 +131,7 @@ export class DexieAdapter implements StorageAdapter {
       this.db.bookmarks,
       this.db.learnCompletions,
       this.db.dayLog,
+      this.db.plan,
     ];
     await this.db.transaction('rw', tables, async () => {
       await Promise.all(tables.map((table) => table.clear()));

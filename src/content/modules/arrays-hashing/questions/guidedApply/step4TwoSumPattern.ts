@@ -79,4 +79,5 @@ A dict mapping value → index answers that in O(1).`,
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

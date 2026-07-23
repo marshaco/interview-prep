@@ -92,4 +92,5 @@ toward zero (so \`-7 / 2\` is \`-3\`, not \`-4\`).`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

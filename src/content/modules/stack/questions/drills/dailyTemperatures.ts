@@ -80,4 +80,5 @@ stack, that day has found its answer — pop it and record the gap.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

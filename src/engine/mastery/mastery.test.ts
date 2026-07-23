@@ -37,6 +37,7 @@ function fakeQuestion(id: string, skillIds: string[]): CodeQuestion {
     hints: ['a', 'b', 'c', 'd'],
     spec: { mode: 'function', entryPoint: 'fn', argTypes: [], resultType: 'value', tests: [] },
     reviewable: true,
+    estimatedMinutes: 20,
   };
 }
 

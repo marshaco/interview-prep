@@ -60,4 +60,5 @@ def search(head, value):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

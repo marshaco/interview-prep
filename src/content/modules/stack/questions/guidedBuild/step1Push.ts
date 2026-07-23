@@ -108,4 +108,5 @@ Implement \`push(value)\`: add \`value\` to the top of the stack.
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

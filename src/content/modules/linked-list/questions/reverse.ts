@@ -62,4 +62,5 @@ def reverse_list(head):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

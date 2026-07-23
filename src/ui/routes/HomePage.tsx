@@ -10,9 +10,12 @@ import { storageAdapter } from '../storageAdapter';
 import { AppShell } from '../components/shell/AppShell';
 import { ProgressRing } from '../components/common/ProgressRing';
 import { StreakCalendar } from '../components/common/StreakCalendar';
+import { PlanStrip } from '../components/plan/PlanStrip';
+import { PlanSetupDialog } from '../components/plan/PlanSetupDialog';
+import { PlanDetailsDialog } from '../components/plan/PlanDetailsDialog';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { ModuleId, RoadmapModule } from '../../content/types';
-import type { Attempt, ReviewState } from '../../storage/types';
+import type { Attempt, PlanRecord, ReviewState } from '../../storage/types';
 
 const MIN_DAYS_FOR_HEATMAP = 7;
 const CARD_WIDTH = 200;
@@ -22,7 +25,10 @@ interface HomeData {
   dayLog: string[];
   reviewStates: ReviewState[];
   learnCompletions: Set<ModuleId>;
+  plan: PlanRecord | null;
 }
+
+type PlanDialogView = 'none' | 'setup' | 'details';
 
 function moduleQuestionIds(module: RoadmapModule): string[] {
   return module.stages.flatMap((stage) => stage.items.filter((item) => item.type === 'question').map((item) => item.questionId));
@@ -105,6 +111,7 @@ function useCardPositions(ids: string[], ready: boolean) {
 export function HomePage() {
   useDocumentTitle('Home');
   const [data, setData] = useState<HomeData | null>(null);
+  const [planDialog, setPlanDialog] = useState<PlanDialogView>('none');
 
   useEffect(() => {
     let cancelled = false;
@@ -113,14 +120,42 @@ export function HomePage() {
       storageAdapter.getDayLog(),
       storageAdapter.getReviewStates(),
       storageAdapter.getLearnCompletions(),
-    ]).then(([attempts, dayLog, reviewStates, learnCompletions]) => {
+      storageAdapter.getPlan(),
+    ]).then(([attempts, dayLog, reviewStates, learnCompletions, plan]) => {
       if (cancelled) return;
-      setData({ attempts, dayLog, reviewStates, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)) });
+      setData({ attempts, dayLog, reviewStates, learnCompletions: new Set(learnCompletions.map((c) => c.moduleId)), plan });
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  async function handleStartPlan(plan: PlanRecord) {
+    await storageAdapter.savePlan(plan);
+    setData((d) => (d ? { ...d, plan } : d));
+    setPlanDialog('none');
+  }
+
+  async function handlePausePlan() {
+    if (!data?.plan) return;
+    const paused: PlanRecord = { ...data.plan, pausedAt: new Date().toISOString() };
+    await storageAdapter.savePlan(paused);
+    setData((d) => (d ? { ...d, plan: paused } : d));
+    setPlanDialog('none');
+  }
+
+  async function handleResumePlan() {
+    if (!data?.plan) return;
+    const resumed: PlanRecord = { ...data.plan, pausedAt: null };
+    await storageAdapter.savePlan(resumed);
+    setData((d) => (d ? { ...d, plan: resumed } : d));
+  }
+
+  async function handleDeletePlan() {
+    await storageAdapter.deletePlan();
+    setData((d) => (d ? { ...d, plan: null } : d));
+    setPlanDialog('none');
+  }
 
   const depths = useMemo(() => computeModuleDepths(modules), []);
   const tiers = useMemo(() => {
@@ -192,6 +227,52 @@ export function HomePage() {
             <span className="font-semibold text-text">{totalMastered}</span> mastered
           </span>
         </div>
+      )}
+
+      {data.plan && !data.plan.pausedAt ? (
+        <PlanStrip
+          plan={data.plan}
+          content={{ modules, questions }}
+          progress={{ attempts: data.attempts, learnCompletions: data.learnCompletions }}
+          reviewStates={data.reviewStates}
+          now={new Date().toISOString()}
+          onOpenDetails={() => setPlanDialog('details')}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => (data.plan?.pausedAt ? void handleResumePlan() : setPlanDialog('setup'))}
+          className="mb-8 block text-sm text-text-muted transition-colors duration-200 ease-out-motion hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {data.plan?.pausedAt ? 'Resume plan →' : 'Set up a study plan →'}
+        </button>
+      )}
+
+      {planDialog === 'setup' && (
+        <PlanSetupDialog
+          modules={modules}
+          questions={questions}
+          progress={{ attempts: data.attempts, learnCompletions: data.learnCompletions }}
+          reviewStates={data.reviewStates}
+          now={new Date().toISOString()}
+          initialPlan={data.plan}
+          onStart={(plan) => void handleStartPlan(plan)}
+          onCancel={() => setPlanDialog('none')}
+        />
+      )}
+
+      {planDialog === 'details' && data.plan && (
+        <PlanDetailsDialog
+          plan={data.plan}
+          content={{ modules, questions }}
+          progress={{ attempts: data.attempts, learnCompletions: data.learnCompletions }}
+          reviewStates={data.reviewStates}
+          now={new Date().toISOString()}
+          onEdit={() => setPlanDialog('setup')}
+          onPause={() => void handlePausePlan()}
+          onDelete={() => void handleDeletePlan()}
+          onClose={() => setPlanDialog('none')}
+        />
       )}
 
       {showHeatmap && (

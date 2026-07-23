@@ -66,4 +66,5 @@ def delete_value(head, value):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

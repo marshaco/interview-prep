@@ -2,7 +2,7 @@ import type { AppDatabase } from './dexie/db';
 import type { ExportBundleV1 } from './types';
 
 export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1> {
-  const [attempts, drafts, reviewStates, notes, bookmarks, learnCompletions, dayLogRows] = await Promise.all([
+  const [attempts, drafts, reviewStates, notes, bookmarks, learnCompletions, dayLogRows, planRow] = await Promise.all([
     db.attempts.toArray(),
     db.drafts.toArray(),
     db.reviewStates.toArray(),
@@ -10,6 +10,7 @@ export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1
     db.bookmarks.toArray(),
     db.learnCompletions.toArray(),
     db.dayLog.toArray(),
+    db.plan.get('singleton'),
   ]);
 
   return {
@@ -23,6 +24,16 @@ export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1
       bookmarks,
       learnCompletions,
       dayLog: dayLogRows.map((row) => row.date),
+      plan: planRow
+        ? {
+            scope: planRow.scope,
+            minutesPerDay: planRow.minutesPerDay,
+            activeDays: planRow.activeDays,
+            targetDate: planRow.targetDate,
+            createdAt: planRow.createdAt,
+            pausedAt: planRow.pausedAt,
+          }
+        : null,
     },
   };
 }
@@ -52,10 +63,10 @@ export function validateExportBundle(data: unknown): ExportBundleV1 {
 }
 
 export async function applyImportBundle(db: AppDatabase, bundle: ExportBundleV1): Promise<void> {
-  const tables = [db.attempts, db.drafts, db.reviewStates, db.notes, db.bookmarks, db.learnCompletions, db.dayLog];
+  const tables = [db.attempts, db.drafts, db.reviewStates, db.notes, db.bookmarks, db.learnCompletions, db.dayLog, db.plan];
   await db.transaction('rw', tables, async () => {
     await Promise.all(tables.map((table) => table.clear()));
-    await Promise.all([
+    const writes: Promise<unknown>[] = [
       db.attempts.bulkAdd(bundle.tables.attempts),
       db.drafts.bulkAdd(bundle.tables.drafts),
       // Older exports predate reviewStates (they used a per-skill reviewRecords
@@ -66,6 +77,12 @@ export async function applyImportBundle(db: AppDatabase, bundle: ExportBundleV1)
       // Older exports predate learnCompletions — fall back to empty rather than throwing.
       db.learnCompletions.bulkAdd(bundle.tables.learnCompletions ?? []),
       db.dayLog.bulkAdd(bundle.tables.dayLog.map((date) => ({ date }))),
-    ]);
+    ];
+    // Older exports predate the plan record entirely; a null plan (no plan
+    // set up, or genuinely absent from an old export) leaves the table empty.
+    if (bundle.tables.plan) {
+      writes.push(db.plan.put({ id: 'singleton', ...bundle.tables.plan }));
+    }
+    await Promise.all(writes);
   });
 }

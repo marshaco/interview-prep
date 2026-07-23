@@ -62,4 +62,5 @@ def find_middle(head):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

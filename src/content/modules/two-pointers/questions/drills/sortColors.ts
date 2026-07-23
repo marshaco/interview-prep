@@ -87,4 +87,5 @@ leave \`1\`s where \`mid\` finds them.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

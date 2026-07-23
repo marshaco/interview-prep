@@ -55,4 +55,5 @@ def prepend(head, value):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

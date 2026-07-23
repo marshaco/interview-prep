@@ -18,6 +18,7 @@ function fakeQuestion(id: string, moduleId: string): CodeQuestion {
     hints: ['a', 'b', 'c', 'd'],
     spec: { mode: 'function', entryPoint: 'fn', argTypes: [], resultType: 'value', tests: [] },
     reviewable: true,
+    estimatedMinutes: 20,
   };
 }
 

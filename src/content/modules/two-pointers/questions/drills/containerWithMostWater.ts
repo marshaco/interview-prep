@@ -82,4 +82,5 @@ something better.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

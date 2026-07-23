@@ -120,4 +120,5 @@ Assume \`pop\` is never called on an empty stack.
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

@@ -99,6 +99,29 @@ describe('DexieAdapter', () => {
     expect(await adapter.getDayLog()).toEqual(['2026-01-01', '2026-01-02']);
   });
 
+  it('round-trips the plan record, returning null before one exists', async () => {
+    const adapter = freshAdapter();
+    expect(await adapter.getPlan()).toBeNull();
+
+    await adapter.savePlan({
+      scope: 'all',
+      minutesPerDay: 30,
+      activeDays: [true, true, true, true, true, false, false],
+      targetDate: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      pausedAt: null,
+    });
+    const plan = await adapter.getPlan();
+    expect(plan?.minutesPerDay).toBe(30);
+    if (!plan) throw new Error('expected a plan to have been saved');
+
+    await adapter.savePlan({ ...plan, minutesPerDay: 45 });
+    expect((await adapter.getPlan())?.minutesPerDay).toBe(45);
+
+    await adapter.deletePlan();
+    expect(await adapter.getPlan()).toBeNull();
+  });
+
   it('export -> wipe -> import restores every table', async () => {
     const adapter = freshAdapter();
     await adapter.saveAttempt(fakeAttempt({ id: 'a1' }));
@@ -108,6 +131,14 @@ describe('DexieAdapter', () => {
     await adapter.toggleBookmark('linked-list/append');
     await adapter.markLearnComplete('linked-list');
     await adapter.logActiveDay('2026-01-01');
+    await adapter.savePlan({
+      scope: 'all',
+      minutesPerDay: 30,
+      activeDays: [true, true, true, true, true, false, false],
+      targetDate: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      pausedAt: null,
+    });
 
     const bundle = await adapter.exportAll();
     expect(bundle.schemaVersion).toBe(1);
@@ -125,6 +156,7 @@ describe('DexieAdapter', () => {
     expect(await adapter.getBookmarks()).toHaveLength(1);
     expect(await adapter.getLearnCompletions()).toHaveLength(1);
     expect(await adapter.getDayLog()).toEqual(['2026-01-01']);
+    expect((await adapter.getPlan())?.minutesPerDay).toBe(30);
   });
 
   it('importAll refuses an unknown schema version', async () => {

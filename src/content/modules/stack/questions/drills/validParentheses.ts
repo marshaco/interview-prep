@@ -76,4 +76,5 @@ the string is invalid. A stack is the natural fit here because the
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

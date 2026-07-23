@@ -73,4 +73,5 @@ rescan everything before it" shape — and it's the seed of the classic
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

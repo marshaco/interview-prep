@@ -68,4 +68,5 @@ def append(head, value):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

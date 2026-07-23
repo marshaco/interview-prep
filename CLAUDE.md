@@ -6,9 +6,13 @@ client-only SPA — no server, no accounts. Full design in `ARCHITECTURE.md`
 (read it before any work), including its §10 "UI System" section — the current
 source of truth for shells, tokens, `ProgressRing`, the `selectNextAction` seam,
 and the mastery formula, all introduced by the Triecode UI overhaul (see the
-first note after the Phases list below) — and its §13 "Review System" section,
+first note after the Phases list below) — its §13 "Review System" section,
 the current source of truth for the review pool, the fixed-interval scheduler,
-review sessions, and the Review page's three states (see the second note).
+review sessions, and the Review page's three states (see the second note) —
+and its §14 "Study Plan" section, the current source of truth for the
+scope/pace/date triangle, the projection engine, and the (entirely optional)
+setup/strip/details UI. Study Plan is a new feature, not a supersession of
+anything in the Phases list — it has no corresponding note below.
 
 The curriculum is an 18-module roadmap DAG split into two categories
 (ARCHITECTURE.md §4.1): **Data Structures** (`kind: 'data_structure'` — build

@@ -199,27 +199,20 @@ export interface CodeQuestion {
   kind: 'method_impl' | 'full_impl' | 'algorithm_problem' | 'debugging';
   moduleId: ModuleId;
   skillIds: SkillId[];
+  title: string;
   prompt: string;                  // markdown
   starterCode: string;
   solution: string;                // canonical solution (also run in CI against tests)
   hints: [string, string, string, string];  // nudge → concept → pseudocode → near-solution
   spec: HarnessSpec;               // how to grade it (§6)
   visualization?: VisualizationBinding;     // optional (§9)
+  reviewable: boolean;              // enters the spaced-review pool once passed (§13)
+  reviewFastThresholdMs?: number;   // per-exercise override of the review "fast pass" threshold (§13)
+  estimatedMinutes: number;         // first-time-solve estimate, read only via estimateMinutes() (§14)
 }
-
-export interface QuizQuestion {
-  id: QuestionId;
-  kind: 'conceptual' | 'complexity';
-  moduleId: ModuleId;
-  skillIds: SkillId[];
-  prompt: string;
-  choices: string[];
-  correctIndex: number;
-  explanation: string;
-}
-
-export type Question = CodeQuestion | QuizQuestion;
 ```
+
+A `QuizQuestion` variant (multiple-choice conceptual/complexity questions) appeared in an early draft of this taxonomy but was never built — V1 ships `CodeQuestion` only, and every module's stages reference it directly rather than a wider `Question` union.
 
 **Guided Build** is a sequence of `CodeQuestion`s where each step's starter code is the previous step's solution plus a new TODO — the "Create the Node class → add head → implement append()" flow falls out of ordinary questions chained by the stage definition, requiring no special engine support.
 
@@ -440,6 +433,9 @@ export interface StorageAdapter {
   toggleBookmark(questionId: QuestionId): Promise<void>;
   logActiveDay(dateISO: string): Promise<void>;
   getDayLog(): Promise<string[]>;
+  getPlan(): Promise<PlanRecord | null>;
+  savePlan(p: PlanRecord): Promise<void>;
+  deletePlan(): Promise<void>;
   exportAll(): Promise<ExportBundleV1>;
   importAll(b: ExportBundleV1): Promise<void>;
 }
@@ -447,7 +443,7 @@ export interface StorageAdapter {
 
 **Superseded (Triecode UI overhaul):** `getMastery`/`upsertMastery` and the `mastery` table are gone — mastery is a pure computation over `attempts` now (§7.2), nothing to store. Added instead: `updateAttemptTags` (post-fail self-tags, §10) and `getLearnCompletions`/`markLearnComplete` (one row per module whose Learn stage was explicitly marked complete — feeds mastery's Learn exercise-equivalent and `selectNextAction`, §10).
 
-Dexie tables mirror these entities 1:1, keyed and indexed for the queries above (`attempts` indexed by `questionId` and `createdAt`; `reviewStates` keyed by `questionId`, §13; `learnCompletions` keyed by `moduleId`). Content is **not** stored in the DB — it ships with the bundle; the DB stores only user-generated state referencing content by stable string ids. That makes content updates a redeploy, never a data migration.
+Dexie tables mirror these entities 1:1, keyed and indexed for the queries above (`attempts` indexed by `questionId` and `createdAt`; `reviewStates` keyed by `questionId`, §13; `learnCompletions` keyed by `moduleId`; `plan` keyed at a fixed id — there is only ever one row, §14). Content is **not** stored in the DB — it ships with the bundle; the DB stores only user-generated state referencing content by stable string ids. That makes content updates a redeploy, never a data migration.
 
 `ExportBundleV1` is a versioned JSON envelope (`{ schemaVersion: 1, exportedAt, tables: {...} }`). Import validates the version and refuses unknown ones. This is the manual laptop↔desktop sync story and, later, the seed data for first server sync.
 
@@ -499,9 +495,10 @@ Every route uses exactly one of:
 
 Replaces Roadmap + Dashboard:
 
-- **Hero** — a dominant raised card reading whatever `selectNextAction` (§10.5) recommends: "N reviews due — Start review →" or "Continue: {module} — {exercise} →". Below it, a compact stats strip (streak, solved this week, total mastered).
+- **Hero** — a dominant raised card reading whatever `selectNextAction` (§10.5) recommends: "N reviews due — Start review →" or "Continue: {module} — {exercise} →". Below it, a compact stats strip (streak, solved this week, total mastered) — suppressed entirely (not shown at zero) until any value is nonzero.
+- **Study plan** (§14, entirely optional) — below the stats strip: with no plan, one quiet link ("Set up a study plan →", no card, no accent — the feature's whole footprint for an opted-out user); with an active plan, a compact strip (today's shape, a real-progress bar, a dry status fragment) that opens plan details on click; paused, the same quiet-link slot reads "Resume plan →". Never touches the hero, which stays the screen's one accent element.
 - **Streak heatmap** — renders nothing (not an empty grid) until ≥7 days of logged activity exist.
-- **Tiered curriculum map** — CSS grid rows keyed by `computeModuleDepths` (`engine/roadmap/dag.ts`, prerequisite depth), each row a wrapping flex of module cards. An SVG overlay (`useCardPositions` — a `useLayoutEffect` measuring real card `getBoundingClientRect()`s, re-run once loading data resolves and cards actually mount) draws prerequisite edges as quiet curves; caption reads "Suggested path — everything is open." Edges hide below the `md` breakpoint. No pan, zoom, or minimap (§2's decision record).
+- **Tiered curriculum map** — CSS grid rows keyed by `computeModuleDepths` (`engine/roadmap/dag.ts`, prerequisite depth), each row a wrapping flex of module cards. An SVG overlay (`useCardPositions` — a `useLayoutEffect` measuring real card `getBoundingClientRect()`s, re-run once loading data resolves and cards actually mount) draws prerequisite edges as quiet curves, opacity low, only into authored (non-ghost) targets. Edges hide below the `md` breakpoint. No pan, zoom, or minimap (§2's decision record).
 - **Module cards** — title, category color, `sm ProgressRing`, "{n} of {m}" exercise count. States: the one global frontier module (accent ring + border), every other authored module (full-strength, always clickable), in-development ghosts (recessed, "In development", not a link). No category filter chips — the static layout plus category coloring is legible without them.
 
 ### 10.4 Module page (`/modules/:id`) and Learn (`/modules/:id/learn`)
@@ -645,6 +642,74 @@ A Module-page row for a due exercise gets a small accent dot + "due for review" 
 
 ---
 
+## 14. Study Plan
+
+An entirely optional feature (`ui/components/plan/`, `engine/plan/`): the user chooses how much content to cover and how much time they have, and Triecode derives a daily schedule. It never gates, orders, or overrides anything `selectNextAction` (§10.5) or the review scheduler (§13) already decide — it only reads them and sizes a day around what they'd recommend anyway.
+
+### 14.1 The triangle
+
+Scope × pace × finish date: the user fixes scope plus **one** of pace or finish date, and the engine derives the third.
+
+- **Scope** — `'all'` (every authored module) or a specific `ModuleId` (that module plus every prerequisite ancestor, transitively — `engine/plan/scope.ts`'s `resolveScopeModuleIds`). Unauthored ancestors are silently skipped rather than blocking the scope; content landing later just widens what the next recompute covers.
+- **Pace** — `minutesPerDay` (floor 10, presets 15/30/45/60/90) plus `activeDays` (7 booleans, Sun–Sat, matching `Date#getDay()`).
+- **Finish date** — optional; when set, it's the fixed reference the active strip's "on track" / "finish moved" status compares the live projection against. Unset when the user drives via pace instead.
+
+### 14.2 Time estimates and the calibration seam
+
+```ts
+// content/types.ts — CodeQuestion
+estimatedMinutes: number; // authored, not computed — stage convention: guided steps 5, independent-build 15, drills 20
+
+// engine/plan/estimate.ts
+export function estimateMinutes(exercise: CodeQuestion, attemptHistory: Attempt[], context?: 'practice' | 'review'): number
+```
+
+V1 returns the content-authored value, × 0.6 in review context (re-solving is faster). `attemptHistory` is unused today — the calibration seam: a later phase replaces the internals with the user's actual median solve time (`attempts.durationMs` already records it) without any consumer changing. A Learn stage costs a flat `LEARN_STAGE_MINUTES` (15) regardless of lesson count — a stage-level engine constant, not a content field, since Learn items are lessons, not exercises.
+
+### 14.3 The plan engine (pure, clock-free)
+
+```ts
+// engine/plan/projectPlan.ts
+export function projectPlan(plan: PlanInputs, progress: PlanProgress, reviewStates: ReviewState[], content: PlanContent, now: string, horizonDays?: number): Projection
+
+// engine/plan/deriveThird.ts
+export function deriveThird(scope: PlanScope, activeDays: [...7 booleans], input: TriangleInput, progress, reviewStates, content, now): TriangleResult
+
+// engine/plan/todayTarget.ts
+export function todayTarget(plan: PlanInputs, progress: PlanProgress, reviewStates: ReviewState[], content: PlanContent, now: string): DayTarget
+```
+
+- **`projectPlan`** simulates day by day from `now`: the in-scope "new content" backlog is built by `engine/plan/workItems.ts`'s `remainingWorkItems` — literally re-running `selectNextAction` against a snapshot that incrementally "completes" each item, rather than a second ordering policy that could drift from the one Home's hero already uses. Each active day spends its budget on due reviews first (most overdue first, at review cost), then new backlog items (at practice cost) until the budget runs out. Every simulated solve is assumed a clean, not-fast pass; if the exercise is `reviewable`, it enters the **same** pure scheduler (`enterReview`/`scheduleReview`, §13.2) used everywhere else — future review load is *projected* by running the real scheduler forward, never separately estimated. Output includes `finishDateIso` (when the new-content backlog empties; `null` if not reached within `horizonDays`), a full `dailyLoad[]`, and `totalRemainingMinutes` (new content only — reviews are perpetual and have no finite total).
+- **`deriveThird`** is the triangle solver setup uses: given a pace, one `projectPlan` call yields the finish date; given a target date, it binary-searches `minutesPerDay` (10–180) for the smallest pace whose projected finish date still reaches it — sound because a larger daily budget can only finish the same backlog on the same day or earlier, never later. Infeasibility is plain data (`{ feasible: false, ... }`), never an exception.
+- **`todayTarget`** is `projectPlan` with `horizonDays: 1`, plus `minutesSpentToday` computed from real attempt durations on the current calendar day (distinct from the simulation's own bookkeeping — the active strip's progress bar tracks actual time spent, not simulated cost).
+- **No stored calendar, ever.** The plan record (§14.4) holds inputs only; every read re-derives from live `attempts`/`reviewStates`. A missed day has no representation to accumulate — the next recompute just reflects current reality, which is what makes "behind" and "backlog" concepts structurally impossible rather than merely hidden.
+
+### 14.4 Persistence
+
+```ts
+// storage/types.ts
+export interface PlanRecord {
+  scope: 'all' | ModuleId;
+  minutesPerDay: number;
+  activeDays: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]; // Sun-Sat
+  targetDate: string | null; // ISO calendar date — set only when the user drove setup via date, not pace
+  createdAt: string;
+  pausedAt: string | null;
+}
+```
+
+A single record (`plan` Dexie table, `v5`, keyed at a fixed id since there is only ever one row) via `StorageAdapter.getPlan`/`savePlan`/`deletePlan` — no daily-completion table; day progress is derived from `attempts` timestamps, never stored. Included in `ExportBundleV1` (nullable — older exports predate it).
+
+### 14.5 UI
+
+- **No plan:** one quiet link on Home below the stats strip ("Set up a study plan →", no card, no accent) — the feature's entire footprint for an opted-out user. No other screen shows anything plan-related.
+- **Setup** (`PlanSetupDialog`, a centered dialog): scope select, pace (presets + custom + weekday toggles) with a toggle to switch to driving by finish date instead, and a live derivation line (`→ finish ~{date}` / `→ ~{n} min/day`) computed via `deriveThird` on every input change. Infeasibility renders as plain text, never a disabled control with no explanation.
+- **Active strip** (`PlanStrip`, on Home, between the stats strip and the map): `Today: {n} reviews · {n} new · ~{X} min`, a thin progress bar filled by `minutesSpentToday / minutesPerDay`, and a right-aligned status (`On track — finish ~{date}` / `Finish moved to {date}`, the latter only when a user-set `targetDate` exists and the live projection has slipped past it). Rest days and done-for-today both render with dry, check-glyph-only copy ("Rest day · next: …", "Done for today · next: …") — the words "behind"/"missed"/"overdue" and any red/warning color never appear, by design. Carries no accent — the hero keeps that.
+- **Details** (`PlanDetailsDialog`, opened by clicking the strip): the coming 7 active days (`projectPlan`'s `dailyLoad` filtered to `isActiveDay`, first 7), the projected finish date, and scope summary. `Edit` reopens setup prefilled; `Pause` sets `pausedAt` (the strip collapses back to the entry-link slot, now reading `Resume plan →`, which resumes directly with no dialog); `Delete` (confirm-then-remove) drops the record entirely.
+- Review sessions, Module pages, Learn, and the editor are **not** capped by the plan budget and render identically with or without one — exceeding a day's target produces no warning anywhere; the next recompute simply reflects it favorably.
+
+---
+
 ## Appendix A — Future Sync Schema (Postgres / Drizzle, not built in V1)
 
 Target mapping when accounts arrive. Local tables translate 1:1 with a `user_id` column added; content stays in-repo (referenced by string id), so only user state syncs.
@@ -664,6 +729,8 @@ review_states    (user_id fk, question_id text, rung int, due_at timestamptz,
 notes            (id uuid pk, user_id fk, question_id text, body text, created_at)
 bookmarks        (user_id fk, question_id text, created_at, pk (user_id, question_id))
 day_log          (user_id fk, day date, pk (user_id, day))
+plan             (user_id pk, scope text, minutes_per_day int, active_days boolean[7],
+                  target_date date, created_at, paused_at)
 ```
 
 Sync strategy when it lands: last-write-wins per row keyed on `updated_at`, with append-only tables (attempts, notes) merged by id — simple, adequate, and honest about not being CRDTs.

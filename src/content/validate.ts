@@ -19,6 +19,10 @@ export function validateQuestion(question: CodeQuestion): string[] {
     errors.push(`${prefix}: reviewable must be a boolean`);
   }
 
+  if (typeof question.estimatedMinutes !== 'number' || question.estimatedMinutes < 1 || question.estimatedMinutes > 120) {
+    errors.push(`${prefix}: estimatedMinutes must be a number in [1, 120]`);
+  }
+
   const spec = question.spec;
   if (!spec.entryPoint) {
     errors.push(`${prefix}: spec.entryPoint must be non-empty`);

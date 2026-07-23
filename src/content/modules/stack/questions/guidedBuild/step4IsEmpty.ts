@@ -125,4 +125,5 @@ stage.
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

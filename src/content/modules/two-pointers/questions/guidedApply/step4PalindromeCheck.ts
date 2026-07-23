@@ -72,4 +72,5 @@ don't match, it isn't a palindrome.`,
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

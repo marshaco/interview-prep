@@ -89,4 +89,5 @@ the calculation.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

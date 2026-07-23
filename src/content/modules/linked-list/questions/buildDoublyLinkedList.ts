@@ -206,4 +206,5 @@ class DoublyLinkedList:
     ],
   },
   reviewable: true,
+  estimatedMinutes: 15,
 };

@@ -170,4 +170,5 @@ class CircularLinkedList:
     ],
   },
   reviewable: true,
+  estimatedMinutes: 15,
 };

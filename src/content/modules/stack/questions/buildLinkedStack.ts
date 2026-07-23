@@ -163,4 +163,5 @@ class Stack:
     ],
   },
   reviewable: true,
+  estimatedMinutes: 15,
 };

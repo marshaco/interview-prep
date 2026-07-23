@@ -193,4 +193,5 @@ class LinkedList:
     ],
   },
   reviewable: true,
+  estimatedMinutes: 15,
 };

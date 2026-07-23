@@ -64,4 +64,5 @@ the difference between an O(n²) and an O(n) solution here.`,
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

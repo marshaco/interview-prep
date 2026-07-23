@@ -85,4 +85,5 @@ needed.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

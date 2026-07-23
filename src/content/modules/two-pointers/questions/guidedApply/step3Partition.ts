@@ -66,4 +66,5 @@ the read pointer finds one.`,
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

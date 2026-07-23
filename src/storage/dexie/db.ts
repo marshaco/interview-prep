@@ -1,11 +1,18 @@
 import Dexie, { type Table } from 'dexie';
-import type { Attempt, Bookmark, Draft, LearnCompletion, Note, ReviewState } from '../types';
+import type { Attempt, Bookmark, Draft, LearnCompletion, Note, PlanRecord, ReviewState } from '../types';
 
 // dayLog rows are wrapped in an object (rather than storing the bare ISO
 // date string) so every table uniformly stores objects with a keyPath —
 // simpler than mixing Dexie's inbound/outbound key conventions.
 export interface DayLogRow {
   date: string;
+}
+
+// The single plan record (Study plan spec §3) wrapped with a fixed literal
+// key, same "every table has a keyPath" reasoning as DayLogRow — there's
+// only ever one row, at id 'singleton'.
+export interface PlanRow extends PlanRecord {
+  id: 'singleton';
 }
 
 export class AppDatabase extends Dexie {
@@ -16,6 +23,7 @@ export class AppDatabase extends Dexie {
   bookmarks!: Table<Bookmark, string>;
   learnCompletions!: Table<LearnCompletion, string>;
   dayLog!: Table<DayLogRow, string>;
+  plan!: Table<PlanRow, string>;
 
   constructor(name = 'interview-prep') {
     super(name);
@@ -45,6 +53,12 @@ export class AppDatabase extends Dexie {
     this.version(4).stores({
       reviewRecords: null,
       reviewStates: 'questionId',
+    });
+    // v5: the study plan (Study plan spec §3) — a single record (scope +
+    // pace/date inputs only; no stored calendar) keyed at a fixed id since
+    // there is never more than one.
+    this.version(5).stores({
+      plan: 'id',
     });
   }
 }

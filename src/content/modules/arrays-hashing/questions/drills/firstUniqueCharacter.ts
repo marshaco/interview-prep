@@ -73,4 +73,5 @@ character.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

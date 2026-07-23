@@ -8,6 +8,7 @@ import type {
   ExportBundleV1,
   LearnCompletion,
   Note,
+  PlanRecord,
   ReviewState,
 } from './types';
 
@@ -29,6 +30,9 @@ export interface StorageAdapter {
   toggleBookmark(questionId: QuestionId): Promise<void>;
   logActiveDay(dateISO: string): Promise<void>;
   getDayLog(): Promise<string[]>;
+  getPlan(): Promise<PlanRecord | null>;
+  savePlan(p: PlanRecord): Promise<void>;
+  deletePlan(): Promise<void>;
   exportAll(): Promise<ExportBundleV1>;
   importAll(b: ExportBundleV1): Promise<void>;
   /**

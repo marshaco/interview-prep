@@ -67,4 +67,5 @@ def merge_two_sorted(head1, head2):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

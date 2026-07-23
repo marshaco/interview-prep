@@ -187,4 +187,5 @@ class LinkedList:
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

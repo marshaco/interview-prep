@@ -70,4 +70,5 @@ twice, giving O(n).`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

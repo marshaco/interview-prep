@@ -83,4 +83,5 @@ move \`right\` back.`,
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

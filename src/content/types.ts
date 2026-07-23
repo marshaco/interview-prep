@@ -109,6 +109,17 @@ export interface CodeQuestion {
    * falls back to DEFAULT_FAST_THRESHOLD_MS (engine/srs/scheduler.ts).
    */
   reviewFastThresholdMs?: number;
+  /**
+   * Minutes a first-time solve is expected to take (Study plan spec §2) —
+   * read only through `engine/plan/estimate.ts`'s `estimateMinutes`, never
+   * directly, so a later calibration pass can replace content estimates
+   * with the user's actual median solve time without any consumer
+   * changing. Authoring convention (like `reviewable`), not a computed
+   * default: guided-build/guided-apply steps 5, independent-build 15,
+   * method/algorithm drills 20 — individual exercises may override.
+   * CI-validated as a number in [1, 120].
+   */
+  estimatedMinutes: number;
 }
 
 // Grading result shapes. Defined here (not in engine/grading/types.ts, which

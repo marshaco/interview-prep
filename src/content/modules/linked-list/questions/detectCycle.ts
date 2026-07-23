@@ -63,4 +63,5 @@ def detect_cycle(head):
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

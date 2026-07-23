@@ -99,4 +99,5 @@ up at the end.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

@@ -65,6 +65,25 @@ export interface LearnCompletion {
   completedAt: string; // ISO
 }
 
+/**
+ * The single study-plan record (Study plan spec §3) — scope + pace/date
+ * inputs only, never a precomputed calendar. `projectPlan`/`todayTarget`
+ * (engine/plan/) re-derive everything from this plus live progress on
+ * every read, which is what lets a missed day simply vanish into a
+ * recomputed forecast instead of accumulating a "behind" backlog.
+ */
+export interface PlanRecord {
+  // The union is purely documentation — ModuleId is a bare `string` alias —
+  // but it's worth keeping as a reminder of the two valid shapes 'all' can take.
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  scope: 'all' | ModuleId; // 'all' = Everything; a ModuleId = "Through {module}"
+  minutesPerDay: number;
+  activeDays: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]; // Sun-Sat, matches Date#getDay()
+  targetDate: string | null; // ISO calendar date, optional (the other pace/date leg is derived, not stored)
+  createdAt: string; // ISO
+  pausedAt: string | null; // ISO; null while active
+}
+
 export interface ExportBundleV1 {
   schemaVersion: 1;
   exportedAt: string; // ISO
@@ -76,5 +95,6 @@ export interface ExportBundleV1 {
     bookmarks: Bookmark[];
     learnCompletions: LearnCompletion[];
     dayLog: string[]; // ISO date strings, one per active day
+    plan: PlanRecord | null;
   };
 }

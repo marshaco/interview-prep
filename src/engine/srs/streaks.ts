@@ -12,7 +12,8 @@ export function localDateIso(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function addDaysIso(dateIso: string, delta: number): string {
+/** Adds `delta` calendar days to a local YYYY-MM-DD date string — shared by streaks and the plan engine's day-by-day projection. */
+export function addDaysIso(dateIso: string, delta: number): string {
   const [year, month, day] = dateIso.split('-').map(Number);
   const date = new Date(year ?? 0, (month ?? 1) - 1, day ?? 0);
   date.setDate(date.getDate() + delta);

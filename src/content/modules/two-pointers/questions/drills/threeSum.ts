@@ -123,4 +123,5 @@ never produced twice.`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };

@@ -82,4 +82,5 @@ count lands back at zero.`,
     ],
   },
   reviewable: false,
+  estimatedMinutes: 5,
 };

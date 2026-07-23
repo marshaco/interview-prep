@@ -22,6 +22,7 @@ function baseQuestion(overrides: Partial<CodeQuestion> = {}): CodeQuestion {
       tests: [{ id: 't1', group: 'visible', args: [1], expected: 1, comparator: 'deep' }],
     },
     reviewable: true,
+    estimatedMinutes: 20,
     ...overrides,
   };
 }

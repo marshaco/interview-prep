@@ -95,4 +95,5 @@ return norm(got) == norm(expected)`,
     ],
   },
   reviewable: true,
+  estimatedMinutes: 20,
 };
