@@ -66,6 +66,14 @@ export interface LearnCompletion {
 }
 
 /**
+ * Exactly one of pace or a finish date drives a plan (Study plan revision
+ * spec §3) — the other is always derived at read time via `deriveThird`,
+ * never stored. A discriminated union rather than two nullable fields so
+ * there is no representable state where both (or neither) are set.
+ */
+export type PlanPaceInput = { mode: 'pace'; minutesPerDay: number } | { mode: 'date'; targetDate: string };
+
+/**
  * The single study-plan record (Study plan spec §3) — scope + pace/date
  * inputs only, never a precomputed calendar. `projectPlan`/`todayTarget`
  * (engine/plan/) re-derive everything from this plus live progress on
@@ -73,13 +81,10 @@ export interface LearnCompletion {
  * recomputed forecast instead of accumulating a "behind" backlog.
  */
 export interface PlanRecord {
-  // The union is purely documentation — ModuleId is a bare `string` alias —
-  // but it's worth keeping as a reminder of the two valid shapes 'all' can take.
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  scope: 'all' | ModuleId; // 'all' = Everything; a ModuleId = "Through {module}"
-  minutesPerDay: number;
+  /** Explicit module-id list (Study plan revision spec §1) — no `'all'` sentinel; "everything" is just every authored module id at setup time, and stays that literal list afterward (new content does not auto-join). */
+  scope: ModuleId[];
+  pace: PlanPaceInput;
   activeDays: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]; // Sun-Sat, matches Date#getDay()
-  targetDate: string | null; // ISO calendar date, optional (the other pace/date leg is derived, not stored)
   createdAt: string; // ISO
   pausedAt: string | null; // ISO; null while active
 }

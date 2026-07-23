@@ -97,9 +97,8 @@ export class DexieAdapter implements StorageAdapter {
     if (!row) return null;
     return {
       scope: row.scope,
-      minutesPerDay: row.minutesPerDay,
+      pace: row.pace,
       activeDays: row.activeDays,
-      targetDate: row.targetDate,
       createdAt: row.createdAt,
       pausedAt: row.pausedAt,
     };

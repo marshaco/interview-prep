@@ -43,7 +43,7 @@ describe('deriveThird', () => {
     const questions = [fakeQuestion('m1/q1', 'm1', 20), fakeQuestion('m1/q2', 'm1', 20), fakeQuestion('m1/q3', 'm1', 20)];
     const content = { modules: [moduleWithQuestions('m1', questions)], questions };
 
-    const result = deriveThird('all', ALL_DAYS, { kind: 'pace', minutesPerDay: 60 }, NO_PROGRESS, [], content, NOW);
+    const result = deriveThird(['m1'], ALL_DAYS, { kind: 'pace', minutesPerDay: 60 }, NO_PROGRESS, [], content, NOW);
 
     expect(result.feasible).toBe(true);
     expect(result.finishDateIso).toBe(TODAY);
@@ -53,7 +53,7 @@ describe('deriveThird', () => {
     const questions = [fakeQuestion('m1/q1', 'm1', 20), fakeQuestion('m1/q2', 'm1', 20), fakeQuestion('m1/q3', 'm1', 20)];
     const content = { modules: [moduleWithQuestions('m1', questions)], questions };
 
-    const result = deriveThird('all', ALL_DAYS, { kind: 'date', targetDate: TODAY }, NO_PROGRESS, [], content, NOW);
+    const result = deriveThird(['m1'], ALL_DAYS, { kind: 'date', targetDate: TODAY }, NO_PROGRESS, [], content, NOW);
 
     expect(result.feasible).toBe(true);
     expect(result.minutesPerDay).toBe(60); // the whole 60-minute backlog must fit in one day to finish today
@@ -65,7 +65,7 @@ describe('deriveThird', () => {
     const content = { modules: [moduleWithQuestions('m1', questions)], questions };
     const tomorrow = addDaysIso(TODAY, 1);
 
-    const result = deriveThird('all', ALL_DAYS, { kind: 'date', targetDate: tomorrow }, NO_PROGRESS, [], content, NOW);
+    const result = deriveThird(['m1'], ALL_DAYS, { kind: 'date', targetDate: tomorrow }, NO_PROGRESS, [], content, NOW);
 
     expect(result.feasible).toBe(false);
     expect(result.minutesPerDay).toBe(MAX_PACE_MINUTES);
@@ -81,7 +81,7 @@ describe('deriveThird', () => {
     ];
 
     const smallResult = deriveThird(
-      'small',
+      ['small'],
       ALL_DAYS,
       { kind: 'date', targetDate: TODAY },
       NO_PROGRESS,
@@ -90,7 +90,7 @@ describe('deriveThird', () => {
       NOW,
     );
     const bigResult = deriveThird(
-      'big',
+      ['big'],
       ALL_DAYS,
       { kind: 'date', targetDate: TODAY },
       NO_PROGRESS,

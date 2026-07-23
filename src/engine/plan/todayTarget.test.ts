@@ -54,7 +54,7 @@ describe('todayTarget', () => {
   it("reflects today's due reviews and next new exercises", () => {
     const q1 = fakeQuestion('m1/q1', 'm1', 20);
     const content = { modules: [moduleWithQuestions('m1', [q1])], questions: [q1] };
-    const plan: PlanInputs = { scope: 'all', minutesPerDay: 20, activeDays: ALL_DAYS };
+    const plan: PlanInputs = { scope: ['m1'], minutesPerDay: 20, activeDays: ALL_DAYS };
 
     const target = todayTarget(plan, { attempts: [], learnCompletions: new Set() }, [], content, NOW);
 
@@ -67,7 +67,7 @@ describe('todayTarget', () => {
   it('is a rest day with zero budget when the weekday is toggled off', () => {
     const q1 = fakeQuestion('m1/q1', 'm1', 20);
     const content = { modules: [moduleWithQuestions('m1', [q1])], questions: [q1] };
-    const plan: PlanInputs = { scope: 'all', minutesPerDay: 20, activeDays: NONE_ACTIVE };
+    const plan: PlanInputs = { scope: ['m1'], minutesPerDay: 20, activeDays: NONE_ACTIVE };
 
     const target = todayTarget(plan, { attempts: [], learnCompletions: new Set() }, [], content, NOW);
 
@@ -79,7 +79,7 @@ describe('todayTarget', () => {
   it('counts minutes actually spent today from real attempt durations, marking done-for-today once the budget is met', () => {
     const q1 = fakeQuestion('m1/q1', 'm1', 20);
     const content = { modules: [moduleWithQuestions('m1', [q1])], questions: [q1] };
-    const plan: PlanInputs = { scope: 'all', minutesPerDay: 15, activeDays: ALL_DAYS };
+    const plan: PlanInputs = { scope: ['m1'], minutesPerDay: 15, activeDays: ALL_DAYS };
     const attempts = [fakeAttempt('m1/q1', NOW, 16 * 60_000)]; // 16 real minutes spent today
 
     const target = todayTarget(plan, { attempts, learnCompletions: new Set() }, [], content, NOW);
@@ -91,7 +91,7 @@ describe('todayTarget', () => {
   it('is not done for today when minutes spent so far are under the budget', () => {
     const q1 = fakeQuestion('m1/q1', 'm1', 20);
     const content = { modules: [moduleWithQuestions('m1', [q1])], questions: [q1] };
-    const plan: PlanInputs = { scope: 'all', minutesPerDay: 30, activeDays: ALL_DAYS };
+    const plan: PlanInputs = { scope: ['m1'], minutesPerDay: 30, activeDays: ALL_DAYS };
     const attempts = [fakeAttempt('m1/q1', NOW, 5 * 60_000)];
 
     const target = todayTarget(plan, { attempts, learnCompletions: new Set() }, [], content, NOW);
@@ -102,7 +102,7 @@ describe('todayTarget', () => {
   it('an item overdue by many days still counts as exactly one due review today — no backlog multiplication', () => {
     const q1 = fakeQuestion('m1/q1', 'm1', 20);
     const content = { modules: [moduleWithQuestions('m1', [q1])], questions: [q1] };
-    const plan: PlanInputs = { scope: 'all', minutesPerDay: 30, activeDays: ALL_DAYS };
+    const plan: PlanInputs = { scope: ['m1'], minutesPerDay: 30, activeDays: ALL_DAYS };
     const longOverdueState: ReviewState = {
       questionId: 'm1/q1',
       rung: 0,

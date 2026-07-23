@@ -9,6 +9,13 @@ import type { Attempt, ReviewState } from '../../storage/types';
 export const LEARN_STAGE_MINUTES = 15; // flat per Learn stage, not per lesson (Study plan spec §2)
 export const DEFAULT_HORIZON_DAYS = 730; // ~2 years — generous cap so infeasibility can actually be detected
 
+// Review cost is estimatedMinutes * 0.6, which is not always exactly
+// representable in floating point (e.g. 18 * 0.6 === 10.799999999999999) —
+// without this tolerance, an item that should fit a budget exactly could be
+// wrongly deferred a day by a `cost > budget` comparison that's off by a
+// fraction of a millisecond's worth of a minute.
+const BUDGET_EPSILON = 1e-6;
+
 export interface PlanInputs {
   scope: PlanScope;
   minutesPerDay: number;
@@ -112,7 +119,7 @@ export function projectPlan(
       const question = questionsById.get(state.questionId);
       if (!question) continue;
       const cost = estimateMinutes(question, [], 'review');
-      if (cost > budget) break; // remaining due reviews simply stay due — no partial credit, no backlog concept
+      if (cost > budget + BUDGET_EPSILON) break; // remaining due reviews simply stay due — no partial credit, no backlog concept
 
       budget -= cost;
       reviewCount += 1;
@@ -129,7 +136,7 @@ export function projectPlan(
       if (!next) break;
 
       if (next.kind === 'learn') {
-        if (LEARN_STAGE_MINUTES > budget) break;
+        if (LEARN_STAGE_MINUTES > budget + BUDGET_EPSILON) break;
         budget -= LEARN_STAGE_MINUTES;
         newCount += 1;
         newMinutes += LEARN_STAGE_MINUTES;
@@ -147,7 +154,7 @@ export function projectPlan(
         continue;
       }
       const cost = estimateMinutes(question, [], 'practice');
-      if (cost > budget) break;
+      if (cost > budget + BUDGET_EPSILON) break;
 
       budget -= cost;
       newCount += 1;

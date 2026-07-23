@@ -11,8 +11,11 @@ the current source of truth for the review pool, the fixed-interval scheduler,
 review sessions, and the Review page's three states (see the second note) —
 and its §14 "Study Plan" section, the current source of truth for the
 scope/pace/date triangle, the projection engine, and the (entirely optional)
-setup/strip/details UI. Study Plan is a new feature, not a supersession of
-anything in the Phases list — it has no corresponding note below.
+setup/hero/details UI — including a revision (mini-map scope selection,
+strict one-way pace/date modes, and merging the former separate plan strip
+into the Home hero) that superseded the feature's initial shape. Study Plan
+is a new feature, not a supersession of anything in the Phases list — it
+has no corresponding note below.
 
 The curriculum is an 18-module roadmap DAG split into two categories
 (ARCHITECTURE.md §4.1): **Data Structures** (`kind: 'data_structure'` — build

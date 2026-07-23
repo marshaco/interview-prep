@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveScopeModuleIds } from './scope';
+import { allAuthoredModuleIds, getAncestorModuleIds, resolveScopeModuleIds } from './scope';
 import type { RoadmapModule } from '../../content/types';
 
 function fakeModule(id: string, prerequisites: string[], authored = true): RoadmapModule {
@@ -15,23 +15,43 @@ function fakeModule(id: string, prerequisites: string[], authored = true): Roadm
 }
 
 describe('resolveScopeModuleIds', () => {
-  it("'all' resolves to every authored module, excluding ghosts", () => {
+  it('resolves to exactly the selected ids, no automatic ancestor expansion', () => {
+    const modules = [fakeModule('root', []), fakeModule('mid', ['root']), fakeModule('leaf', ['mid'])];
+    // 'leaf' selected without its ancestors — scope is exactly ['leaf'], per spec's "nothing is gated" design.
+    expect(resolveScopeModuleIds(['leaf'], modules)).toEqual(new Set(['leaf']));
+  });
+
+  it('filters out ids that are unauthored or no longer exist', () => {
+    const modules = [fakeModule('a', []), fakeModule('ghost', [], false)];
+    expect(resolveScopeModuleIds(['a', 'ghost', 'gone'], modules)).toEqual(new Set(['a']));
+  });
+
+  it('an empty scope list resolves to nothing', () => {
+    const modules = [fakeModule('a', [])];
+    expect(resolveScopeModuleIds([], modules)).toEqual(new Set());
+  });
+});
+
+describe('allAuthoredModuleIds', () => {
+  it('lists every authored module, excluding ghosts', () => {
     const modules = [fakeModule('a', []), fakeModule('b', ['a']), fakeModule('ghost', [], false)];
-    expect(resolveScopeModuleIds('all', modules)).toEqual(new Set(['a', 'b']));
+    expect(allAuthoredModuleIds(modules)).toEqual(['a', 'b']);
+  });
+});
+
+describe('getAncestorModuleIds', () => {
+  it('returns transitive prerequisites, not including the module itself', () => {
+    const modules = [fakeModule('root', []), fakeModule('mid', ['root']), fakeModule('leaf', ['mid'])];
+    expect(getAncestorModuleIds('leaf', modules)).toEqual(new Set(['mid', 'root']));
   });
 
-  it('a specific module resolves to itself plus its transitive prerequisite ancestors', () => {
-    const modules = [fakeModule('root', []), fakeModule('mid', ['root']), fakeModule('leaf', ['mid']), fakeModule('unrelated', [])];
-    expect(resolveScopeModuleIds('leaf', modules)).toEqual(new Set(['root', 'mid', 'leaf']));
+  it('is empty for a root module with no prerequisites', () => {
+    const modules = [fakeModule('root', [])];
+    expect(getAncestorModuleIds('root', modules)).toEqual(new Set());
   });
 
-  it('skips an unauthored ancestor rather than blocking the whole scope', () => {
-    const modules = [fakeModule('root', [], false), fakeModule('leaf', ['root'])];
-    expect(resolveScopeModuleIds('leaf', modules)).toEqual(new Set(['leaf']));
-  });
-
-  it('handles diamond dependencies without duplication or infinite recursion', () => {
+  it('handles diamond dependencies without infinite recursion', () => {
     const modules = [fakeModule('root', []), fakeModule('left', ['root']), fakeModule('right', ['root']), fakeModule('top', ['left', 'right'])];
-    expect(resolveScopeModuleIds('top', modules)).toEqual(new Set(['root', 'left', 'right', 'top']));
+    expect(getAncestorModuleIds('top', modules)).toEqual(new Set(['left', 'right', 'root']));
   });
 });

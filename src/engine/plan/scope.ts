@@ -1,40 +1,47 @@
 import type { ModuleId, RoadmapModule } from '../../content/types';
 
-// The union is purely documentation — ModuleId is a bare `string` alias, so
-// TS can't actually distinguish 'all' from it — but it's worth keeping at
-// every call site as a reminder of the two valid shapes 'all' can take.
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-export type PlanScope = 'all' | ModuleId;
+/** An explicit list of module ids (Study plan revision spec §1) — no `'all'` sentinel; "everything" is just the list of every authored module at setup time. */
+export type PlanScope = ModuleId[];
 
-function isGhostModule(module: RoadmapModule): boolean {
+export function isGhostModule(module: RoadmapModule): boolean {
   return module.stages.every((stage) => stage.items.length === 0);
 }
 
 /**
- * Resolves a plan's scope to the set of module ids it covers (Study plan
- * spec §1) — `'all'` is every authored module; a specific module id is
- * that module plus all its prerequisite ancestors, transitively. Only
- * authored (non-ghost) modules can ever be scheduled — an unauthored
- * ancestor is silently skipped rather than blocking the whole scope, since
- * content landing later (the module flips from ghost to live) should just
- * widen what the next recompute covers, not require replanning.
+ * Resolves a plan's scope list to the set of module ids the projection may
+ * actually draw from (Study plan revision spec §4) — exactly the selected
+ * ids, filtered to modules that both exist and are authored. No automatic
+ * ancestor expansion: selecting a module whose prerequisites aren't also
+ * selected is allowed (nothing is gated), it just means those prerequisites
+ * contribute nothing to the projection, which is exactly the informational
+ * "builds on" note's point.
  */
 export function resolveScopeModuleIds(scope: PlanScope, modules: RoadmapModule[]): Set<ModuleId> {
-  if (scope === 'all') {
-    return new Set(modules.filter((m) => !isGhostModule(m)).map((m) => m.id));
-  }
+  const authoredIds = new Set(modules.filter((m) => !isGhostModule(m)).map((m) => m.id));
+  return new Set(scope.filter((id) => authoredIds.has(id)));
+}
 
+/** Every authored module id, in no particular order — "select All" and the `'all'` -> list migration both want exactly this set. */
+export function allAuthoredModuleIds(modules: RoadmapModule[]): ModuleId[] {
+  return modules.filter((m) => !isGhostModule(m)).map((m) => m.id);
+}
+
+/** Transitive prerequisite ancestors of a module (not including itself) — used for the mini-map's informational "builds on" note. */
+export function getAncestorModuleIds(moduleId: ModuleId, modules: RoadmapModule[]): Set<ModuleId> {
   const byId = new Map(modules.map((m) => [m.id, m]));
   const result = new Set<ModuleId>();
 
   function visit(id: ModuleId): void {
-    if (result.has(id)) return;
     const module = byId.get(id);
-    if (!module || isGhostModule(module)) return;
-    result.add(id);
-    for (const prereqId of module.prerequisites) visit(prereqId);
+    if (!module) return;
+    for (const prereqId of module.prerequisites) {
+      if (!result.has(prereqId)) {
+        result.add(prereqId);
+        visit(prereqId);
+      }
+    }
   }
 
-  visit(scope);
+  visit(moduleId);
   return result;
 }

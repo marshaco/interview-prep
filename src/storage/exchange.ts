@@ -27,9 +27,8 @@ export async function buildExportBundle(db: AppDatabase): Promise<ExportBundleV1
       plan: planRow
         ? {
             scope: planRow.scope,
-            minutesPerDay: planRow.minutesPerDay,
+            pace: planRow.pace,
             activeDays: planRow.activeDays,
-            targetDate: planRow.targetDate,
             createdAt: planRow.createdAt,
             pausedAt: planRow.pausedAt,
           }

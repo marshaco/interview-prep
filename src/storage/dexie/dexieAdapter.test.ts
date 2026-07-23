@@ -104,19 +104,18 @@ describe('DexieAdapter', () => {
     expect(await adapter.getPlan()).toBeNull();
 
     await adapter.savePlan({
-      scope: 'all',
-      minutesPerDay: 30,
+      scope: ['linked-list'],
+      pace: { mode: 'pace', minutesPerDay: 30 },
       activeDays: [true, true, true, true, true, false, false],
-      targetDate: null,
       createdAt: '2026-01-01T00:00:00.000Z',
       pausedAt: null,
     });
     const plan = await adapter.getPlan();
-    expect(plan?.minutesPerDay).toBe(30);
+    expect(plan?.pace).toEqual({ mode: 'pace', minutesPerDay: 30 });
     if (!plan) throw new Error('expected a plan to have been saved');
 
-    await adapter.savePlan({ ...plan, minutesPerDay: 45 });
-    expect((await adapter.getPlan())?.minutesPerDay).toBe(45);
+    await adapter.savePlan({ ...plan, pace: { mode: 'pace', minutesPerDay: 45 } });
+    expect((await adapter.getPlan())?.pace).toEqual({ mode: 'pace', minutesPerDay: 45 });
 
     await adapter.deletePlan();
     expect(await adapter.getPlan()).toBeNull();
@@ -132,10 +131,9 @@ describe('DexieAdapter', () => {
     await adapter.markLearnComplete('linked-list');
     await adapter.logActiveDay('2026-01-01');
     await adapter.savePlan({
-      scope: 'all',
-      minutesPerDay: 30,
+      scope: ['linked-list'],
+      pace: { mode: 'pace', minutesPerDay: 30 },
       activeDays: [true, true, true, true, true, false, false],
-      targetDate: null,
       createdAt: '2026-01-01T00:00:00.000Z',
       pausedAt: null,
     });
@@ -156,7 +154,7 @@ describe('DexieAdapter', () => {
     expect(await adapter.getBookmarks()).toHaveLength(1);
     expect(await adapter.getLearnCompletions()).toHaveLength(1);
     expect(await adapter.getDayLog()).toEqual(['2026-01-01']);
-    expect((await adapter.getPlan())?.minutesPerDay).toBe(30);
+    expect((await adapter.getPlan())?.pace).toEqual({ mode: 'pace', minutesPerDay: 30 });
   });
 
   it('importAll refuses an unknown schema version', async () => {

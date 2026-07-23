@@ -6,13 +6,16 @@ import { selectNextAction, type NextAction } from '../../engine/nextAction/selec
 import { computeModuleMastery } from '../../engine/mastery/mastery';
 import { countSolvedThisWeek, countTotalMastered } from '../../engine/stats/homeStats';
 import { currentStreak, localDateIso } from '../../engine/srs/streaks';
+import { projectPlan, type DayLoad } from '../../engine/plan/projectPlan';
+import { resolvePlanInputs } from '../../engine/plan/resolvePlanInputs';
+import { todayTarget } from '../../engine/plan/todayTarget';
 import { storageAdapter } from '../storageAdapter';
 import { AppShell } from '../components/shell/AppShell';
 import { ProgressRing } from '../components/common/ProgressRing';
 import { StreakCalendar } from '../components/common/StreakCalendar';
-import { PlanStrip } from '../components/plan/PlanStrip';
 import { PlanSetupDialog } from '../components/plan/PlanSetupDialog';
 import { PlanDetailsDialog } from '../components/plan/PlanDetailsDialog';
+import { formatPlanDate, roundMinutes } from '../components/plan/planFormat';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { ModuleId, RoadmapModule } from '../../content/types';
 import type { Attempt, PlanRecord, ReviewState } from '../../storage/types';
@@ -56,6 +59,49 @@ function heroCopy(nextAction: NextAction): { text: string; href: string } {
     case 'none':
       return { text: "You're caught up on everything available — nice work.", href: '/' };
   }
+}
+
+function dayShape(day: DayLoad | undefined): string {
+  if (!day) return 'nothing';
+  return `${day.reviewCount} review${day.reviewCount === 1 ? '' : 's'} · ${day.newCount} new`;
+}
+
+interface PlanLine {
+  text: string;
+  isDone: boolean;
+  statusText: string | null;
+  showProgress: boolean;
+  progressPct: number;
+}
+
+/** The hero's second line when a plan is active (Study plan revision spec §2) — merged into the same card as the CTA, never a separate accent element. */
+function buildPlanLine(plan: PlanRecord, content: { modules: RoadmapModule[]; questions: typeof questions }, progress: { attempts: Attempt[]; learnCompletions: Set<ModuleId> }, reviewStates: ReviewState[], now: string): PlanLine {
+  const planInputs = resolvePlanInputs(plan, progress, reviewStates, content, now);
+  const dayTarget = todayTarget(planInputs, progress, reviewStates, content, now);
+  const projection = projectPlan(planInputs, progress, reviewStates, content, now);
+  const tomorrow = projection.dailyLoad[1];
+
+  const statusText = (() => {
+    if (!projection.finishDateIso) return null;
+    if (plan.pace.mode === 'date' && projection.finishDateIso > plan.pace.targetDate) {
+      return `Finish moved to ${formatPlanDate(projection.finishDateIso)}`;
+    }
+    return `On track — finish ${formatPlanDate(projection.finishDateIso)}`;
+  })();
+
+  const text = !dayTarget.isActiveDay
+    ? `Rest day · next: ${dayShape(tomorrow)} tomorrow`
+    : dayTarget.isDoneForToday
+      ? 'Done for today'
+      : `Today: ${dayTarget.dueReviewCount} review${dayTarget.dueReviewCount === 1 ? '' : 's'} · ${dayTarget.newExerciseCount} new · ${roundMinutes(dayTarget.budgetMinutes)} min`;
+
+  return {
+    text,
+    isDone: dayTarget.isDoneForToday,
+    statusText,
+    showProgress: dayTarget.isActiveDay && !dayTarget.isDoneForToday,
+    progressPct: dayTarget.budgetMinutes > 0 ? Math.min(1, dayTarget.minutesSpentToday / dayTarget.budgetMinutes) : 0,
+  };
 }
 
 /** Real DOM anchor positions for the module cards, so the SVG edge overlay lines up with wherever flex-wrap actually put each card. */
@@ -206,14 +252,46 @@ export function HomePage() {
   const totalMastered = countTotalMastered(data.attempts);
   const showHeatmap = data.dayLog.length >= MIN_DAYS_FOR_HEATMAP;
 
+  const nowIso = new Date().toISOString();
+  const planContent = { modules, questions };
+  const planProgress = { attempts: data.attempts, learnCompletions: data.learnCompletions };
+  const isPlanActive = data.plan && !data.plan.pausedAt;
+  const planLine = data.plan && isPlanActive ? buildPlanLine(data.plan, planContent, planProgress, data.reviewStates, nowIso) : null;
+
   return (
     <AppShell>
-      <Link
-        to={hero.href}
-        className="mb-6 block rounded-lg border border-border bg-bg-elevated px-6 py-5 transition-colors duration-200 ease-out-motion hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        <p className="text-lg font-semibold text-accent">{hero.text}</p>
-      </Link>
+      <div className="mb-6 rounded-lg border border-border bg-bg-elevated px-6 py-5">
+        <Link
+          to={hero.href}
+          className="block rounded transition-colors duration-200 ease-out-motion hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <p className="text-lg font-semibold text-accent">{hero.text}</p>
+        </Link>
+
+        {planLine && (
+          <button
+            type="button"
+            onClick={() => setPlanDialog('details')}
+            className="mt-3 block w-full rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-text-muted">
+                {planLine.isDone && <span className="mr-1.5 text-success">✓</span>}
+                {planLine.text}
+              </p>
+              {planLine.statusText && <p className="shrink-0 text-xs text-text-muted">{planLine.statusText}</p>}
+            </div>
+            {planLine.showProgress && (
+              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-border">
+                <div
+                  className="h-full rounded-full bg-text-muted transition-[width] duration-300 ease-out-motion motion-reduce:transition-none"
+                  style={{ width: `${planLine.progressPct * 100}%` }}
+                />
+              </div>
+            )}
+          </button>
+        )}
+      </div>
 
       {(streak > 0 || solvedThisWeek > 0 || totalMastered > 0) && (
         <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
@@ -229,16 +307,7 @@ export function HomePage() {
         </div>
       )}
 
-      {data.plan && !data.plan.pausedAt ? (
-        <PlanStrip
-          plan={data.plan}
-          content={{ modules, questions }}
-          progress={{ attempts: data.attempts, learnCompletions: data.learnCompletions }}
-          reviewStates={data.reviewStates}
-          now={new Date().toISOString()}
-          onOpenDetails={() => setPlanDialog('details')}
-        />
-      ) : (
+      {!isPlanActive && (
         <button
           type="button"
           onClick={() => (data.plan?.pausedAt ? void handleResumePlan() : setPlanDialog('setup'))}
@@ -252,9 +321,9 @@ export function HomePage() {
         <PlanSetupDialog
           modules={modules}
           questions={questions}
-          progress={{ attempts: data.attempts, learnCompletions: data.learnCompletions }}
+          progress={planProgress}
           reviewStates={data.reviewStates}
-          now={new Date().toISOString()}
+          now={nowIso}
           initialPlan={data.plan}
           onStart={(plan) => void handleStartPlan(plan)}
           onCancel={() => setPlanDialog('none')}
@@ -264,10 +333,10 @@ export function HomePage() {
       {planDialog === 'details' && data.plan && (
         <PlanDetailsDialog
           plan={data.plan}
-          content={{ modules, questions }}
-          progress={{ attempts: data.attempts, learnCompletions: data.learnCompletions }}
+          content={planContent}
+          progress={planProgress}
           reviewStates={data.reviewStates}
-          now={new Date().toISOString()}
+          now={nowIso}
           onEdit={() => setPlanDialog('setup')}
           onPause={() => void handlePausePlan()}
           onDelete={() => void handleDeletePlan()}
